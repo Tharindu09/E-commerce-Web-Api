@@ -19,7 +19,7 @@ public class AppDbContext : DbContext
         {
             entity.ToTable("users");
             entity.HasKey(u => u.Id); //PK
-            entity.Property(u => u.Id).ValueGeneratedOnAdd(); //Auto increment PK
+            entity.Property(u => u.Id).UseIdentityAlwaysColumn(); //ID auto generate
 
             entity.HasIndex(u => u.Email).IsUnique();
 

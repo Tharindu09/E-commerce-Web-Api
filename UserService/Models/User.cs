@@ -4,7 +4,7 @@ namespace UserService.Models;
 
 public class User
 {       [Key]
-        public Guid Id { get; set; }
+        public int Id { get; set; }
         [Required]
         public string Name { get; set; } = default!;
 
@@ -13,6 +13,6 @@ public class User
         public string Email { get; set; } = default!;
 
         [Required]
-        public string PasswordHash { get; set; } = default!;
+        public string Password { get; set; } = default!;
 
 }
