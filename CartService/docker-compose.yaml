@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:latest       # Use the official Redis image
+    container_name: redis
+    ports:
+      - "6379:6379"           # Map Redis default port to host
+    volumes:
+      - redis_data:/data      # Persist data
+    restart: unless-stopped   # Automatically restart if container stops
+
+volumes:
+  redis_data:

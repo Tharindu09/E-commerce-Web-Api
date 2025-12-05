@@ -1,0 +1,13 @@
+using CartService.Model;
+
+namespace CartService.Services;
+
+public interface ICartService
+{
+    Task<Cart?> GetCartAsync(int userId);
+    Task<Cart> AddToCartAsync(int userId, CartItem item);
+
+    Task<bool> RemoveItemAsync(int userId, int productId);
+    
+    Task<bool> ClearCartAsync(int userId);
+}
