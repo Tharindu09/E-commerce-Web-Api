@@ -6,6 +6,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpClient<ICartService, CCartService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ProductService:BaseUrl"]);
+});
+
 
 // Redis connection
 builder.Services.AddSingleton<IConnectionMultiplexer>(

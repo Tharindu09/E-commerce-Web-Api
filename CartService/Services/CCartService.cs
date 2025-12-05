@@ -1,16 +1,19 @@
 using CartService.Model;
 using System.Text.Json;
 using StackExchange.Redis;
+using CartService.Dtos;
 
 namespace CartService.Services;
 
 public class CCartService : ICartService
 {
     private readonly IDatabase _redis;
+    private readonly HttpClient _http;
 
-    public CCartService(IConnectionMultiplexer redis)
+    public CCartService(IConnectionMultiplexer redis,HttpClient http)
     {
         _redis = redis.GetDatabase();
+        _http = http;
     }
 
     public async Task<Cart?> GetCartAsync(int userId)
@@ -22,22 +25,35 @@ public class CCartService : ICartService
 
     }
     
-    public async Task<Cart> AddToCartAsync(int userId, CartItem item)
+    public async Task<Cart> AddToCartAsync(int userId, int productId, int quantity)
+{
+    // Fetch product info from Product Service
+    var product = await _http.GetFromJsonAsync<ProductDto>($"http://localhost:5258/api/products/{productId}");
+    if (product == null) throw new Exception("Product not found");
+
+    var cart = await GetCartAsync(userId) ?? new Cart { UserId = userId };
+
+    var existing = cart.Items.FirstOrDefault(x => x.ProductId == productId);
+    if (existing != null)
     {
-        var cart = await GetCartAsync(userId) ?? new Cart { UserId = userId };
-        var exist = cart.Items.FirstOrDefault(x => x.ProductId == item.ProductId);
-        if (exist != null)
-        {
-            exist.Quantity += item.Quantity;
-        }
-
-        else cart.Items.Add(item);
-
-        await _redis.StringSetAsync($"cart:{userId}", JsonSerializer.Serialize(cart)); //save cart
-
-        return cart;
-        
+        existing.Quantity += quantity;
+        existing.Price = product.Price; // always override with correct price
+        existing.ProductName = product.Name;
     }
+    else
+    {
+        cart.Items.Add(new CartItem
+        {
+            ProductId = productId,
+            ProductName = product.Name,
+            Price = product.Price,
+            Quantity = quantity
+        });
+    }
+
+    await _redis.StringSetAsync($"cart:{userId}", JsonSerializer.Serialize(cart), TimeSpan.FromDays(7));
+    return cart;
+}
 
     public async Task<bool> ClearCartAsync(int userId)
     {

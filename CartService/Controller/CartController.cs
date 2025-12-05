@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using CartService.Model;
 using CartService.Services;
+using CartService.Dtos;
 
 namespace CartService.Controllers;
 
@@ -23,9 +24,9 @@ public class CartController : ControllerBase
     }
 
     [HttpPost("{userId}/add")]
-    public async Task<IActionResult> AddToCart(int userId, CartItem item)
+    public async Task<IActionResult> AddToCart(int userId, CartAddRequest req)
     {
-        var cart = await _cartService.AddToCartAsync(userId, item);
+        var cart = await _cartService.AddToCartAsync(userId, req.ProductId,req.Quantity);
         return Ok(cart);
     }
 
