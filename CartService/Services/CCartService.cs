@@ -15,7 +15,12 @@ public class CCartService : ICartService
         _redis = redis.GetDatabase();
         _http = http;
     }
-
+    public async Task<ProductDto?> GetProductById(int productId)
+    {
+        // Fetch product info from Product Service
+        var product = await _http.GetFromJsonAsync<ProductDto>($"http://localhost:5258/api/products/{productId}");
+        return product;
+    }
     public async Task<Cart?> GetCartAsync(int userId)
     {
         var data =await _redis.StringGetAsync($"cart:{userId}");
@@ -26,9 +31,9 @@ public class CCartService : ICartService
     }
     
     public async Task<Cart> AddToCartAsync(int userId, int productId, int quantity)
-{
+    {
     // Fetch product info from Product Service
-    var product = await _http.GetFromJsonAsync<ProductDto>($"http://localhost:5258/api/products/{productId}");
+    var product = await GetProductById(productId);
     if (product == null) throw new Exception("Product not found");
 
     var cart = await GetCartAsync(userId) ?? new Cart { UserId = userId };
