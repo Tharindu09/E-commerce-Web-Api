@@ -15,4 +15,8 @@ public class User
         [Required]
         public string Password { get; set; } = default!;
 
+        public string Phone { get; set; } = default!;
+
+        public Address address{ get; set; } = default!;
+
 }

@@ -17,6 +17,5 @@ public class OrderItem
     public int Quantity { get; set; }
 
     public decimal Total => PriceAtPurchase * Quantity;
-
     public Order Order { get; set; }
 }

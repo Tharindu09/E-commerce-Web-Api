@@ -18,7 +18,26 @@ public class Order
     public string ShipDistrict { get; set; } = "";
     public string ShipProvince { get; set; } = "";
     public string ShipPostalCode { get; set; } = "";
-    public List<OrderItem> Items { get; set; } = new List<OrderItem>();
 
+    //Order and Payment status
+    public string OrderStatus { get; set; } = "";
+
+    //Time metadata
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
+    public List<OrderItem> Items { get; set; }
+
+}
+
+
+public enum OrderStatus
+{
+    Created,
+    PendingPayment,
+    Paid,
+    Processing,
+    Shipped,
+    Delivered,
+    Cancelled
 }
 

@@ -21,11 +21,11 @@
     </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
     <PackageReference Include="System.Net.Http.Json" Version="10.0.0" />
+     <Protobuf Include="Protos/user.proto" GrpcServices="Client" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Controller\" />
-    <Folder Include="Dtos\" />
   </ItemGroup>
 
 </Project>

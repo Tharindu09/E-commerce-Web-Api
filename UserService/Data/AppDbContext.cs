@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
     { }
 
     public DbSet<User> Users { get; set; }
+    public DbSet<Address> Address { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -18,15 +19,16 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.ToTable("users");
-            entity.HasKey(u => u.Id); //PK
-            entity.Property(u => u.Id).UseIdentityAlwaysColumn(); //ID auto generate
-
+            entity.HasKey(u => u.Id); // Primary Key
+            entity.Property(u => u.Id).UseIdentityAlwaysColumn(); // Auto-increment
             entity.HasIndex(u => u.Email).IsUnique();
 
-
-
-        }
-        );
+            // One-to-one relationship
+            entity.HasOne(u => u.address)    // User has one Address
+                  .WithOne(a => a.User)      // Address has one User
+                  .HasForeignKey<Address>(a => a.UserId) // FK is in Address
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 
 

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option csharp_namespace = "UserService.Grpc";
+
+service UserProfileService {
+    // Fetch full user profile snapshot
+    rpc GetUserProfile (GetUserProfileRequest) returns (UserProfileResponse);
+}
+
+// ---- Requests ----
+message GetUserProfileRequest {
+    int32 userId = 1;
+}
+
+// ---- Responses ----
+message UserProfileResponse {
+    int32 userId = 1;
+    string name = 2;
+    string email = 3;
+    string phone = 4;
+
+    // Address snapshot (optional)
+    string addressLine1 = 5;
+    string addressLine2 = 6;
+    string city = 7;
+    string district = 8;
+    string province = 9;
+    string postalCode = 10;
+}
