@@ -21,7 +21,17 @@ namespace UserService.Mappers
             {
                 Name = dto.Name,
                 Email = dto.Email,
-                Password = dto.Password
+                Password = dto.Password,
+                Phone = dto.Phone,
+                Address = new Address
+                        {
+                            AddressLine1 = dto.address.AddressLine1,
+                            AddressLine2 = dto.address.AddressLine2,
+                            City = dto.address.City,
+                            District = dto.address.District,
+                            Province = dto.address.Province,
+                            PostalCode = dto.address.PostalCode
+                        }
             };
         }
     }

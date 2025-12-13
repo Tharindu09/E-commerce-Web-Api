@@ -7,7 +7,7 @@ using UserService.Mappers;
 namespace UserService.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/users")]
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;

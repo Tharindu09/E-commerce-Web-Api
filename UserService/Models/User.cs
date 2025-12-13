@@ -17,6 +17,6 @@ public class User
 
         public string Phone { get; set; } = default!;
 
-        public Address address{ get; set; } = default!;
+        public Address Address{ get; set; } = default!;
 
 }
