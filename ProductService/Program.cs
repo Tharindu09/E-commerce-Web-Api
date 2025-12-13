@@ -25,7 +25,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
-app.MapGrpcService<InventoryGrpcService>();
+app.MapGrpcService<ProductGrpcService>();
 app.MapControllers();
 
 app.Run();

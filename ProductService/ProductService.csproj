@@ -22,7 +22,9 @@
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-    <Protobuf Include="Protos\update_inventory.proto" GrpcServices="Server" />
+  </ItemGroup>
+  <ItemGroup>
+    <Protobuf Include="Protos\product.proto" GrpcServices="Server" />
   </ItemGroup>
 
 </Project>

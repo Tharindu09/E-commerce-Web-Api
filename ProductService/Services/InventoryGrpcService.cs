@@ -6,11 +6,11 @@ using ProductService.Model;
 
 namespace ProductService.Services;
 
-public class InventoryGrpcService: InventoryGrpc.InventoryGrpcBase
+public class ProductGrpcService: Grpc.ProductService.ProductServiceBase
 {
     private readonly AppDbContext _context;
 
-    public InventoryGrpcService(AppDbContext context)
+    public ProductGrpcService(AppDbContext context)
     {
         _context = context;
     }
@@ -51,6 +51,26 @@ public class InventoryGrpcService: InventoryGrpc.InventoryGrpcBase
         };
 
 
+    }
+
+    public async override Task<GetProductResponse> GetProductById(GetProductReq request, ServerCallContext context)
+    {
+        Product product = await _context.Products.Include(p => p.Inventory).SingleOrDefaultAsync(p => p.Id == request.ProductId);
+
+        if (product == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "Product not found"));
+        }
+
+        var response = new GetProductResponse
+        {
+            Name = product.Name,
+            Price = (double)product.Price,
+            Category = product.Category,
+            Stock = product.Inventory.Stock
+        };
+
+        return response;
     }
 
 
