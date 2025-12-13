@@ -7,10 +7,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.33.2" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.71.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.76.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.21" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.10.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
   </ItemGroup>
+  <ItemGroup>
+    <Protobuf Include="Protos/cart.proto" GrpcServices="Server" />
+  </ItemGroup>
+
 
 </Project>

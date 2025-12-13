@@ -11,6 +11,8 @@ builder.Services.AddHttpClient<ICartService, CCartService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["ProductService:BaseUrl"]);
 });
 
+//grpc 
+builder.Services.AddGrpc();
 
 // Redis connection
 builder.Services.AddSingleton<IConnectionMultiplexer>(
@@ -29,5 +31,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseAuthorization();
+app.MapGrpcService<CartGrpcService>();
+
 app.MapControllers();
 app.Run();
