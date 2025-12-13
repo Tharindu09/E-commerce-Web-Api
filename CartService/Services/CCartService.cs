@@ -8,20 +8,14 @@ namespace CartService.Services;
 public class CCartService : ICartService
 {
     private readonly IDatabase _redis;
-    private readonly HttpClient _http;
+    private readonly ProductGrpcClient _client;
 
-    public CCartService(IConnectionMultiplexer redis,HttpClient http)
+    public CCartService(IConnectionMultiplexer redis,ProductGrpcClient client)
     {
         _redis = redis.GetDatabase();
-        _http = http;
+        _client = client;
     }
-    public async Task<ProductDto?> GetProductById(int productId)
-    {
-        // Fetch product info from Product Service
-        var product = await _http.GetFromJsonAsync<ProductDto>($"http://localhost:5258/api/products/{productId}");
-        return product;
-    }
-    public async Task<Cart?> GetCartAsync(int userId)
+        public async Task<Cart?> GetCartAsync(int userId)
     {
         var data =await _redis.StringGetAsync($"cart:{userId}");
         if (data.IsNullOrEmpty) return null;
@@ -33,7 +27,7 @@ public class CCartService : ICartService
     public async Task<Cart> AddToCartAsync(int userId, int productId, int quantity)
     {
     // Fetch product info from Product Service
-    var product = await GetProductById(productId);
+    var product = await _client.GetProductByIdAsync(productId);
     if (product == null) throw new Exception("Product not found");
 
     var cart = await GetCartAsync(userId) ?? new Cart { UserId = userId };
@@ -42,7 +36,7 @@ public class CCartService : ICartService
     if (existing != null)
     {
         existing.Quantity += quantity;
-        existing.Price = product.Price; // always override with correct price
+        existing.Price = (decimal)product.Price; 
         existing.ProductName = product.Name;
     }
     else
@@ -51,7 +45,7 @@ public class CCartService : ICartService
         {
             ProductId = productId,
             ProductName = product.Name,
-            Price = product.Price,
+            Price = (decimal)product.Price,
             Quantity = quantity
         });
     }

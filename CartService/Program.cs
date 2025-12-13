@@ -13,6 +13,11 @@ builder.Services.AddHttpClient<ICartService, CCartService>(client =>
 
 //grpc 
 builder.Services.AddGrpc();
+builder.Services.AddGrpcClient<ProductService.Grpc.ProductService.ProductServiceClient>(o =>
+{
+    o.Address = new Uri(builder.Configuration["ProductService:GrpcUrl"]);
+});
+builder.Services.AddScoped<ProductGrpcClient>();
 
 // Redis connection
 builder.Services.AddSingleton<IConnectionMultiplexer>(
