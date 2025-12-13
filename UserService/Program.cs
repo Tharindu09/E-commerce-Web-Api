@@ -4,22 +4,27 @@ using UserService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 🔹 ADD THIS
+builder.Services.AddGrpc();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<AppDbContext>(option => option.UseNpgsql(builder.Configuration.
-                                                                        GetConnectionString("DefaultConnection")).
-                                                                        EnableSensitiveDataLogging().
-                                                                        LogTo(Console.WriteLine));
-                                                                    
-// 2. Add the UserService as a scoped service
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+           .EnableSensitiveDataLogging()
+           .LogTo(Console.WriteLine)
+);
+
+// User service
 builder.Services.AddScoped<IUserService, CUserService>();
 
-// 3. Add controllers
+// Controllers (REST)
 builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -27,7 +32,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.MapControllers(); // Map controller routes
+
+// gRPC
+app.MapGrpcService<UserGrpcService>();
+
+// REST controllers
+app.MapControllers();
 
 app.Run();
-

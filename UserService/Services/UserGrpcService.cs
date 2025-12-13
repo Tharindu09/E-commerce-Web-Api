@@ -1,5 +1,6 @@
 using System;
 using Grpc.Core;
+using Microsoft.EntityFrameworkCore;
 using UserService.Data;
 using UserService.Grpc;
 
@@ -17,7 +18,9 @@ public class UserGrpcService : UserProfileService.UserProfileServiceBase
 
     public override async Task<UserProfileResponse> GetUserProfile(GetUserProfileRequest request, ServerCallContext context)
     {
-        var user = await _context.Users.FindAsync(request.UserId);
+        var user = await _context.Users
+                        .Include(u => u.Address)
+                        .FirstOrDefaultAsync(u => u.Id == request.UserId);
         if (user == null)
         {
             throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
@@ -29,12 +32,12 @@ public class UserGrpcService : UserProfileService.UserProfileServiceBase
             Name = user.Name,
             Email = user.Email,
             Phone = user.Phone,
-            AddressLine1 = user.address.AddressLine1,
-            AddressLine2 = user.address.AddressLine2,
-            City = user.address.City,
-            District = user.address.District,
-            Province = user.address.Province,
-            PostalCode = user.address.PostalCode
+            AddressLine1 = user.Address.AddressLine1,
+            AddressLine2 = user.Address.AddressLine2,
+            City = user.Address.City,
+            District = user.Address.District,
+            Province = user.Address.Province,
+            PostalCode = user.Address.PostalCode
 
         };
     }

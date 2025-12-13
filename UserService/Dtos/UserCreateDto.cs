@@ -12,7 +12,7 @@ public class UserCreateDto
     [Required]
     public string Password { get; set; }
     [Required]
-    [StringLength(10, ErrorMessage = "Number must be 10 digits")]
+    [RegularExpression(@"^\d{10}$", ErrorMessage = "Phone number must be exactly 10 digits")]
     public string Phone { get; set; }
     [Required]
     public AddressDto address { get; set; }

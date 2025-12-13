@@ -35,24 +35,31 @@ public class CUserService : IUserService
         return user;
     }
 
-    public async Task<bool> UpdateUserAsync(int id, User user)
-    {
-        User existUser = appDbContext.Users.Find(id);
-        if (existUser != null)
-        {
-            // Update properties
-            existUser.Name = user.Name;
-            existUser.Email = user.Email;
+    public async Task<bool> UpdateUserAsync(int id, User dto)
+{
+    var user = await appDbContext.Users
+        .Include(u => u.Address)
+        .FirstOrDefaultAsync(u => u.Id == id);
 
-            // Save changes
-            await appDbContext.SaveChangesAsync();
-            return true; // update successful
+        if (user == null)
+            return false;
 
-        } 
-        
-        return false;
-    }
+        user.Name = dto.Name;
+        user.Email = dto.Email;
+        user.Phone = dto.Phone;
 
+        user.Address ??= new Address();
+
+        user.Address.AddressLine1 = dto.Address.AddressLine1;
+        user.Address.AddressLine2 = dto.Address.AddressLine2;
+        user.Address.City = dto.Address.City;
+        user.Address.District = dto.Address.District;
+        user.Address.Province = dto.Address.Province;
+        user.Address.PostalCode = dto.Address.PostalCode;
+
+        await appDbContext.SaveChangesAsync();
+        return true;
+}
     public async Task<bool> DeleteUserAsync(int id)
     {
         var user = await appDbContext.Users.FindAsync(id);

@@ -24,7 +24,7 @@ public class AppDbContext : DbContext
             entity.HasIndex(u => u.Email).IsUnique();
 
             // One-to-one relationship
-            entity.HasOne(u => u.address)    // User has one Address
+            entity.HasOne(u =>u.Address)    // User has one Address
                   .WithOne(a => a.User)      // Address has one User
                   .HasForeignKey<Address>(a => a.UserId) // FK is in Address
                   .OnDelete(DeleteBehavior.Cascade);
