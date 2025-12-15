@@ -29,7 +29,8 @@ public class CProductService : IProductService
         // Create inventory row
         var inventory = new Inventory
         {
-            Stock = dto.InitialStock,
+            TotalStock = dto.InitialStock,
+            AvailableStock = dto.InitialStock,
             Product = product
         };
 

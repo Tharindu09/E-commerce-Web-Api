@@ -30,7 +30,7 @@ public class ProductController : ControllerBase
             Name = product.Name,
             Price = product.Price,
             Category = product.Category,
-            Stock = product.Inventory.Stock
+            Stock = product.Inventory.TotalStock
         };
 
         return CreatedAtAction(nameof(GetProductById), new { id = readDto.Id }, readDto);
@@ -48,7 +48,7 @@ public class ProductController : ControllerBase
             Name = p.Name,
             Price = p.Price,
             Category = p.Category,
-            Stock = p.Inventory.Stock
+            Stock = p.Inventory.AvailableStock
         });
 
         return Ok(result);
@@ -69,7 +69,7 @@ public class ProductController : ControllerBase
             Name = product.Name,
             Price = product.Price,
             Category = product.Category,
-            Stock = product.Inventory.Stock
+            Stock = product.Inventory.AvailableStock
         };
 
         return Ok(readDto);

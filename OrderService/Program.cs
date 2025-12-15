@@ -9,15 +9,19 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddGrpc();
 builder.Services.AddGrpcClient<CartService.Grpc.CartService.CartServiceClient>(o =>
 {
-    o.Address = new Uri("https://localhost:7235"); // Cart service
+    o.Address = new Uri("https://localhost:7235"); // Cart service grpc
 });
 
 builder.Services.AddGrpcClient<UserService.Grpc.UserProfileService.UserProfileServiceClient>(o =>
 {
-    o.Address = new Uri("https://localhost:7253"); // User service
+    o.Address = new Uri("https://localhost:7253"); // User service grpc
 });
 
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
 
 var app = builder.Build();
 

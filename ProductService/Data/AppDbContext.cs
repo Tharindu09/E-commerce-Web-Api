@@ -10,6 +10,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Product> Products { get; set; }
     public DbSet<Inventory> Inventories { get; set; }
+    public DbSet<StockReservation> StockReservations { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -20,6 +21,8 @@ public class AppDbContext : DbContext
         .WithOne(i => i.Product)
         .HasForeignKey<Inventory>(i => i.ProductId)
         .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Inventory>().HasOne(i => i.StockReservation).WithOne(s=>s.Inventory).HasForeignKey<StockReservation>(s=>s.InventoryId).OnDelete(DeleteBehavior.Cascade);
     }
     
 

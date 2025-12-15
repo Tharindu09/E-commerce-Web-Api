@@ -11,8 +11,12 @@ public class Inventory
     [ForeignKey("Product")]
     public int ProductId { get; set; }
     [Required]
-    public int Stock { get; set; }
+    public int TotalStock { get; set; }
+
+    public int AvailableStock { get; set; } 
 
     public Product Product { get; set; } // Navigation property to Product
+
+    public StockReservation StockReservation { get; set; } // Navigation property to StockReservation
 
 }
