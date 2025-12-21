@@ -1,5 +1,7 @@
 using CartService.Grpc;
+using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
+using OrderService.Dtos;
 using OrderService.Model;
 using ProductService.Grpc;
 using UserService.Grpc;
@@ -47,44 +49,52 @@ public class COrderService : IOrderService
         var user = await _userClient.GetUserProfileAsync(
             new GetUserProfileRequest { UserId = userId });
 
-        //Reserve stock
-        var reservedItems = new List<CartItem>();
+        //Save Order draft
+        var orderDraft = new Order
+        {
+            UserId = userId,
+            UserName = user.Name,
+            UserEmail = user.Email,
+            UserPhone = user.Phone,
+
+            ShipLine1 = user.AddressLine1,
+            ShipLine2 = user.AddressLine2,
+            ShipCity = user.City,
+            ShipDistrict = user.District,
+            ShipProvince = user.Province,
+            ShipPostalCode = user.PostalCode,
+
+            OrderStatus = OrderStatus.Draft.ToString(),
+            Items = new List<OrderItem>()
+        };
+        await _db.Orders.AddAsync(orderDraft);
+        await _db.SaveChangesAsync();
+
+        //Reserve stock  
         try
         {
+            ReserveStockRequest request = new ReserveStockRequest
+            {
+                OrderId = orderDraft.Id,
+            };
             foreach (var item in cart.Items)
             {
-                UpdateInventoryResponse response = await _productClient.UpdateInventoryAsync(
-                    new UpdateInventoryRequest
-                    {
-                        ProductId = item.ProductId,
-                        QuantityChange = item.Quantity * -1, // Reduce stock
-                    });
-                if (!response.Success)
+                request.Items.Add(new Stock
                 {
-                    _logger.LogError("Failed to reserve stock for Product ID: {ProductId}", item.ProductId);
-                    throw new Exception($"Failed to reserve stock for Product ID: {item.ProductId}");
-                }
-                reservedItems.Add(item);
-
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity
+                });
             }
-        }
-        catch
+
+            var reservationResponse = await _productClient.ReserveStockAsync(request);
+            
+        }catch (Exception ex)
         {
-
-            // ROLLBACK INVENTORY
-            foreach (var item in reservedItems)
-            {
-                await _productClient.UpdateInventoryAsync(
-                    new UpdateInventoryRequest
-                    {
-                        ProductId = item.ProductId,
-                        QuantityChange = item.Quantity // restore
-                    });
-            }
-
+            _logger.LogError(ex, "Error during stock reservation for Order ID: {OrderId}", orderDraft.Id);
+           
             throw;
         }
-
+        
 
 
         // Begin transaction
@@ -132,11 +142,48 @@ public class COrderService : IOrderService
         catch
         {
             await tx.RollbackAsync();
+            _logger.LogError("Transaction rolled back for creating order for User ID: {UserId}", userId);
+            await _productClient.CancelReservationAsync(new CancelReservationRequest
+            {
+                OrderId = orderDraft.Id
+            });
             throw;
         }
-        return 1;
 
-    }
+        return orderId;
 
-    
+        }
+
+    public async Task<OrderDto> GetOrderByIdAsync(int orderId)
+{
+    var order = await _db.Orders
+        .Where(o => o.Id == orderId)
+        .Select(o => new OrderDto
+        {
+            Id = o.Id,
+            UserName = o.UserName,
+            UserEmail = o.UserEmail,
+            UserPhone = o.UserPhone,
+            ShipLine1 = o.ShipLine1,
+            ShipLine2 = o.ShipLine2,
+            ShipCity = o.ShipCity,
+            ShipDistrict = o.ShipDistrict,
+            ShipProvince = o.ShipProvince,
+            ShipPostalCode = o.ShipPostalCode,
+            Items = o.Items.Select(i => new OrderItemDto
+            {
+                ProductId = i.ProductId,
+                ProductName = i.ProductName,
+                Quantity = i.Quantity,
+                PriceAtPurchase = i.PriceAtPurchase
+            }).ToList()
+        })
+        .FirstOrDefaultAsync();
+
+    if (order == null)
+        throw new Exception("Order not found");
+
+    return order;
+}
+
 }

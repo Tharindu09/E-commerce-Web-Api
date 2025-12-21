@@ -1,33 +1,43 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using OrderService.Dtos;
+using OrderService.Model;
 using OrderService.Services;
 
 namespace OrderService.Controller
 {
-    [Route("api/order")]
+    [Route("api/orders")]
     [ApiController]
     public class OrderController : ControllerBase
     {
-        private readonly COrderService _orderService;
-        public OrderController(COrderService orderService)
+        private readonly IOrderService _orderService;
+        public OrderController(IOrderService orderService)
         {
             _orderService = orderService;
         }
 
-        // [HttpGet]
-        // [Route("{orderId}")]
-        // public IActionResult GetOrderById(int ororderId)
-        // {
-
-        // }
-
-        [HttpPost]
-        [Route("create/{userId}")]
-        public IActionResult CreateOrder(int userId)
+        [HttpGet]
+        [Route("{orderId}")]
+        public async Task<IActionResult> GetOrderById(int orderId)
         {
             try
             {
-                var orderId = _orderService.CreateOrderAsync(userId).Result;
+                OrderDto order = await _orderService.GetOrderByIdAsync(orderId);
+                return Ok(order);
+            }
+            catch (System.Exception)
+            {
+                throw;
+            } 
+
+        }
+
+        [HttpPost]
+        [Route("create/{userId}")]
+        public async Task<IActionResult> CreateOrder(int userId)
+        {
+            try
+            {
+                var orderId = await _orderService.CreateOrderAsync(userId);
                 return Ok(new { OrderId = orderId });
             }
             catch (Exception ex)

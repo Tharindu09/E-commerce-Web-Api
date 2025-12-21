@@ -79,40 +79,76 @@ public class ProductGrpcService : Grpc.ProductService.ProductServiceBase
     ReserveStockRequest request, ServerCallContext context)
     {
         using var tx = await _context.Database.BeginTransactionAsync();
-
-        var product = await _context.Products.Include(p => p.Inventory)
-            .FirstOrDefaultAsync(p => p.Id == request.ProductId);
-
-        if (product == null)
-            return Fail("Product not found");
-
-        if (product.Inventory.AvailableStock < request.Quantity)
-            return Fail("Insufficient stock");
-
-        // Reduce available stock
-        product.Inventory.AvailableStock -= request.Quantity;
-
-        var reservation = new StockReservation
-        {
-            InventoryId = product.Inventory.Id,
-            ProductId = product.Id,
-            OrderId = request.OrderId,
-            ReservedQuantity = request.Quantity,
-            Status = ReservationStatus.Reserved,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(10) //TTL 10 minutes
-        };
-
-        _context.StockReservations.Add(reservation);
-        await _context.SaveChangesAsync();
-        await tx.CommitAsync();
-
-        return new ReserveStockResponse
+        var response = new ReserveStockResponse
         {
             Success = true,
-            ReservationId = reservation.Id,
-            Message = "Stock reserved"
+            Message = "Stock reserved successfully"
         };
-    }
+            
+        var reservations = new List<StockReservation>();
+
+        try
+        {
+            foreach (var item in request.Items)
+            {
+                var product = await _context.Products
+                    .Include(p => p.Inventory)
+                    .FirstOrDefaultAsync(p => p.Id == item.ProductId);
+
+                if (product == null)
+                {
+                    throw new RpcException(new Status(StatusCode.NotFound, $"Product not found: {item.ProductId}"));
+                }
+
+                if (product.Inventory.AvailableStock < item.Quantity)
+                {
+                    throw new RpcException(new Status(StatusCode.FailedPrecondition, $"Insufficient stock for product: {item.ProductId}"));
+                }
+
+                // Reduce available stock
+                product.Inventory.AvailableStock -= item.Quantity;
+
+                var reservation = new StockReservation
+                {
+                    InventoryId = product.Inventory.Id,
+                    ProductId = product.Id,
+                    OrderId = request.OrderId,
+                    ReservedQuantity = item.Quantity,
+                    Status = ReservationStatus.Reserved,
+                    ExpiresAt = DateTime.UtcNow.AddMinutes(10) // TTL 10 minutes
+                };
+
+                _context.StockReservations.Add(reservation);
+                reservations.Add(reservation);
+                response.Results.Add(new StockReservationResult
+                {
+                    ProductId = item.ProductId,
+                    ReservationId = reservation.Id,
+                    Reserved = true
+                });
+            }
+
+            // Save all reservations at once
+            await _context.SaveChangesAsync();
+            await tx.CommitAsync();
+
+            return response;
+        }
+        catch (RpcException)
+        {
+            // Rollback transaction automatically
+            await tx.RollbackAsync();
+            throw;
+        }
+        catch (Exception ex)
+        {
+            await tx.RollbackAsync();
+            throw new RpcException(new Status(
+            StatusCode.Internal,
+            "Failed to reserve stock"
+        ));
+        }
+}
 
     public override async Task<ConfirmReservationResponse> ConfirmReservation(
     ConfirmReservationRequest request, ServerCallContext context)
@@ -136,42 +172,43 @@ public class ProductGrpcService : Grpc.ProductService.ProductServiceBase
 
     public override async Task<CancelReservationResponse> CancelReservation(
     CancelReservationRequest request, ServerCallContext context)
+{
+    using var tx = await _context.Database.BeginTransactionAsync();
+
+    // Get all reservations for this order
+    var reservations = await _context.StockReservations
+        .Include(r => r.Inventory)
+        .Where(r => r.OrderId == request.OrderId)
+        .ToListAsync();
+
+    if (reservations == null || reservations.Count == 0)
+        throw new RpcException(new Status(StatusCode.NotFound, "Reservations not found"));
+
+    bool anyUpdated = false;
+
+    foreach (var reservation in reservations)
     {
-        using var tx = await _context.Database.BeginTransactionAsync();
-
-        var reservation = await _context.StockReservations
-            .Include(r => r.Inventory)
-            .FirstOrDefaultAsync(r => r.Id == request.ReservationId);
-
-        if (reservation == null)
-            throw new RpcException(new Status(StatusCode.NotFound, "Reservation not found"));
-
-        if (reservation.Status != ReservationStatus.Reserved)
-            throw new RpcException(new Status(StatusCode.FailedPrecondition, "Reservation cannot be cancelled"));
-
-        // Restore stock
-        reservation.Inventory.AvailableStock += reservation.ReservedQuantity;
-
-        reservation.Status = ReservationStatus.Cancelled;
-        await _context.SaveChangesAsync();
-        await tx.CommitAsync();
-
-        return new CancelReservationResponse
+        if (reservation.Status == ReservationStatus.Reserved)
         {
-            Success = true
-        };
+            // Restore stock
+            reservation.Inventory.AvailableStock += reservation.ReservedQuantity;
+            reservation.Status = ReservationStatus.Cancelled;
+            anyUpdated = true;
+        }
     }
 
-    // Helper method to create failure response
-    private ReserveStockResponse Fail(string message)
+    if (!anyUpdated)
+        throw new RpcException(new Status(StatusCode.FailedPrecondition, "No reservations can be cancelled"));
+
+    await _context.SaveChangesAsync();
+    await tx.CommitAsync();
+
+    return new CancelReservationResponse
     {
-        return new ReserveStockResponse
-        {
-            Success = false,
-            Message = message,
-            ReservationId = 0
-        };
+        Success = true
+    };
+}
 
 
-    }
+   
 }

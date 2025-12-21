@@ -5,6 +5,7 @@ namespace OrderService.Model;
 public class Order
 {   [Key]
     public int Id { get; set; }
+    [Required]
     public int UserId { get; set; }
 
     // User snapshot
@@ -20,7 +21,8 @@ public class Order
     public string ShipPostalCode { get; set; } = "";
 
     //Order and Payment status
-    public string OrderStatus { get; set; } = "";
+    [Required]
+    public string OrderStatus { get; set; }
 
     //Time metadata
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -31,7 +33,7 @@ public class Order
 
 
 public enum OrderStatus
-{
+{   Draft,
     Created,
     PendingPayment,
     Paid,
