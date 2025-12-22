@@ -24,9 +24,9 @@ namespace OrderService.Controller
                 OrderDto order = await _orderService.GetOrderByIdAsync(orderId);
                 return Ok(order);
             }
-            catch (System.Exception)
+            catch (Exception ex)
             {
-                throw;
+                return BadRequest($"Could not retrieve order: {ex.Message}");
             } 
 
         }
@@ -42,7 +42,7 @@ namespace OrderService.Controller
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                return BadRequest($"Could not create order: {ex.Message}");
             }
         }
     }

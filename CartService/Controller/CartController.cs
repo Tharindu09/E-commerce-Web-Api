@@ -23,12 +23,20 @@ public class CartController : ControllerBase
         return Ok(cart ?? new Cart { UserId = userId });
     }
 
-    
+
     [HttpPost("{userId}/add")]
     public async Task<IActionResult> AddToCart(int userId, CartAddRequest req)
     {
-        var cart = await _cartService.AddToCartAsync(userId, req.ProductId,req.Quantity);
-        return Ok(cart);
+        try
+        {
+            var cart = await _cartService.AddToCartAsync(userId, req.ProductId, req.Quantity);
+            return Ok(cart);
+        }
+        catch (Exception ex)
+        {
+
+            return BadRequest($"Could not add item to cart: {ex.Message}");
+        }
     }
 
     [HttpDelete("{userId}/remove/{productId}")]

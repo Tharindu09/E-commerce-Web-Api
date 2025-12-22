@@ -35,155 +35,158 @@ public class COrderService : IOrderService
     public async Task<int> CreateOrderAsync(int userId)
     {
         // Fetch cart
+        var cart = await GetCartAsync(userId);
+
+        // Fetch user profile
+        var user = await GetUserAsync(userId);
+
+        // Start transaction
+        using var tx = await _db.Database.BeginTransactionAsync();
+
+        Order order = new Order();
+
+        try
+        {
+            order = await CreateDraftOrderAsync(user, cart);
+            await ReserveStockAsync(order.Id, cart);
+            await FinalizeOrderAsync(order);
+
+            await tx.CommitAsync();
+            return order.Id;
+        }
+        catch (Exception ex)
+        {
+            await tx.RollbackAsync();
+            _logger.LogError(ex, "Order creation failed for User {UserId}", userId);
+            await CancelStockReservationAsync(order.Id);
+            throw;
+        }
+    }
+
+    public async Task<OrderDto> GetOrderByIdAsync(int orderId)
+    {
+        var order = await _db.Orders
+            .Where(o => o.Id == orderId)
+            .Select(o => new OrderDto
+            {
+                Id = o.Id,
+                UserName = o.UserName,
+                UserEmail = o.UserEmail,
+                UserPhone = o.UserPhone,
+                ShipLine1 = o.ShipLine1,
+                ShipLine2 = o.ShipLine2,
+                ShipCity = o.ShipCity,
+                ShipDistrict = o.ShipDistrict,
+                ShipProvince = o.ShipProvince,
+                ShipPostalCode = o.ShipPostalCode,
+                OrderStatus = o.OrderStatus,
+                Items = o.Items.Select(i => new OrderItemDto
+                {
+                    ProductId = i.ProductId,
+                    ProductName = i.ProductName,
+                    Quantity = i.Quantity,
+                    PriceAtPurchase = i.PriceAtPurchase
+                }).ToList()
+            })
+            .FirstOrDefaultAsync();
+
+        if (order == null)
+            throw new Exception("Order not found");
+
+
+        return order;
+    }
+
+
+    // Helper methods
+    private async Task<CartService.Grpc.CartResponse> GetCartAsync(int userId)
+    {
         var cart = await _cartClient.GetCartByUserIdAsync(
             new GetCartRequest { UserId = userId });
 
         if (cart.Items.Count == 0)
         {
-            _logger.LogWarning("Attempt to create order with empty cart for User ID: {UserId}", userId);
-            throw new Exception("Cart is empty");
-
+            throw new InvalidOperationException("Cart is empty");
         }
 
-        // Fetch user profile
-        var user = await _userClient.GetUserProfileAsync(
-            new GetUserProfileRequest { UserId = userId });
+        return cart;
+    }
 
-        //Save Order draft
-        var orderDraft = new Order
+    private async Task<UserProfileResponse> GetUserAsync(int userId)
+    {
+        return await _userClient.GetUserProfileAsync(
+            new GetUserProfileRequest { UserId = userId });
+    }
+
+    private async Task<Order> CreateDraftOrderAsync(
+    UserProfileResponse user,
+    CartService.Grpc.CartResponse cart)
+    {
+        var order = new Order
         {
-            UserId = userId,
+            UserId = user.UserId,
             UserName = user.Name,
             UserEmail = user.Email,
             UserPhone = user.Phone,
-
             ShipLine1 = user.AddressLine1,
             ShipLine2 = user.AddressLine2,
             ShipCity = user.City,
             ShipDistrict = user.District,
             ShipProvince = user.Province,
             ShipPostalCode = user.PostalCode,
-
             OrderStatus = OrderStatus.Draft.ToString(),
-            Items = new List<OrderItem>()
-        };
-        await _db.Orders.AddAsync(orderDraft);
-        await _db.SaveChangesAsync();
-
-        //Reserve stock  
-        try
-        {
-            ReserveStockRequest request = new ReserveStockRequest
-            {
-                OrderId = orderDraft.Id,
-            };
-            foreach (var item in cart.Items)
-            {
-                request.Items.Add(new Stock
-                {
-                    ProductId = item.ProductId,
-                    Quantity = item.Quantity
-                });
-            }
-
-            var reservationResponse = await _productClient.ReserveStockAsync(request);
-            
-        }catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during stock reservation for Order ID: {OrderId}", orderDraft.Id);
-           
-            throw;
-        }
-        
-
-
-        // Begin transaction
-        _logger.LogInformation("Beginning transaction for creating order for User ID: {UserId}", userId);
-        int orderId;
-
-        using var tx = await _db.Database.BeginTransactionAsync();
-        try
-        {
-            var order = new Order
-            {
-                UserId = userId,
-                UserName = user.Name,
-                UserEmail = user.Email,
-                UserPhone = user.Phone,
-
-                ShipLine1 = user.AddressLine1,
-                ShipLine2 = user.AddressLine2,
-                ShipCity = user.City,
-                ShipDistrict = user.District,
-                ShipProvince = user.Province,
-                ShipPostalCode = user.PostalCode,
-
-                OrderStatus = OrderStatus.PendingPayment.ToString(),
-                Items = new List<OrderItem>()
-            };
-
-            foreach (var item in cart.Items)
-            {
-                order.Items.Add(new OrderItem
-                {
-                    ProductId = item.ProductId,
-                    ProductName = item.ProductName,
-                    PriceAtPurchase = (decimal)item.Price,
-                    Quantity = item.Quantity
-                });
-            }
-
-            _db.Orders.Add(order);
-            await _db.SaveChangesAsync();
-            await tx.CommitAsync();
-
-            orderId = order.Id;
-        }
-        catch
-        {
-            await tx.RollbackAsync();
-            _logger.LogError("Transaction rolled back for creating order for User ID: {UserId}", userId);
-            await _productClient.CancelReservationAsync(new CancelReservationRequest
-            {
-                OrderId = orderDraft.Id
-            });
-            throw;
-        }
-
-        return orderId;
-
-        }
-
-    public async Task<OrderDto> GetOrderByIdAsync(int orderId)
-{
-    var order = await _db.Orders
-        .Where(o => o.Id == orderId)
-        .Select(o => new OrderDto
-        {
-            Id = o.Id,
-            UserName = o.UserName,
-            UserEmail = o.UserEmail,
-            UserPhone = o.UserPhone,
-            ShipLine1 = o.ShipLine1,
-            ShipLine2 = o.ShipLine2,
-            ShipCity = o.ShipCity,
-            ShipDistrict = o.ShipDistrict,
-            ShipProvince = o.ShipProvince,
-            ShipPostalCode = o.ShipPostalCode,
-            Items = o.Items.Select(i => new OrderItemDto
+            Items = cart.Items.Select(i => new OrderItem
             {
                 ProductId = i.ProductId,
                 ProductName = i.ProductName,
-                Quantity = i.Quantity,
-                PriceAtPurchase = i.PriceAtPurchase
+                PriceAtPurchase = (decimal)i.Price,
+                Quantity = i.Quantity
             }).ToList()
-        })
-        .FirstOrDefaultAsync();
+        };
 
-    if (order == null)
-        throw new Exception("Order not found");
+        _db.Orders.Add(order);
+        await _db.SaveChangesAsync();
 
-    return order;
-}
+        return order;
+    }
+
+    private async Task ReserveStockAsync(int orderId, CartService.Grpc.CartResponse cart)
+    {
+        var request = new ReserveStockRequest
+        {
+            OrderId = orderId
+        };
+        request.Items.AddRange(
+            cart.Items.Select(i => new Stock
+            {
+                ProductId = i.ProductId,
+                Quantity = i.Quantity
+            }));
+
+        var response = await _productClient.ReserveStockAsync(request);
+
+        if (!response.Success)
+        {
+            throw new InvalidOperationException(
+                $"Stock reservation failed: {response.Message}");
+        }
+    }
+
+    private async Task FinalizeOrderAsync(Order order)
+    {
+        order.OrderStatus = OrderStatus.PendingPayment.ToString();
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Order {OrderId} moved to PendingPayment",
+            order.Id);
+    }
+
+    private async Task CancelStockReservationAsync(int orderId)
+    {
+        await _productClient.CancelReservationAsync(
+            new CancelReservationRequest { OrderId = orderId });
+    }
+
 
 }

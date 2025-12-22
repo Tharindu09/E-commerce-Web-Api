@@ -29,6 +29,7 @@ public class CCartService : ICartService
     // Fetch product info from Product Service
     var product = await _client.GetProductByIdAsync(productId);
     if (product == null) throw new Exception("Product not found");
+    if (product.Stock < quantity) throw new Exception("Insufficient stock");
 
     var cart = await GetCartAsync(userId) ?? new Cart { UserId = userId };
 
