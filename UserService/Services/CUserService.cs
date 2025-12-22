@@ -73,5 +73,16 @@ public class CUserService : IUserService
         return false;
     }
 
+    public async Task<User?> GetUserByEmailAsync(string email)
+    {
+        var user = await appDbContext.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+        return user;
+    }
     
+    public bool VerifyPassword(User user, string password)
+    {
+        var result = passwordHasher.VerifyHashedPassword(user, user.Password, password);
+        return result == PasswordVerificationResult.Success;
+    }
 }

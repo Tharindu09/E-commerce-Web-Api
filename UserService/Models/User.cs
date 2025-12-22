@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace UserService.Models;
 
 public class User
-{       [Key]
+{ [Key]
         public int Id { get; set; }
         [Required]
         public string Name { get; set; } = default!;
@@ -17,6 +17,15 @@ public class User
 
         public string Phone { get; set; } = default!;
 
-        public Address Address{ get; set; } = default!;
+        public Address Address { get; set; } = default!;
 
+        public string Role { get; set; } = "User";
+
+}
+
+public enum Role
+{
+        User,
+        Admin,
+        Vendor
 }
