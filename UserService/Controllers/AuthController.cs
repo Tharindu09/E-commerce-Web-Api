@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using UserService.Dtos;
+using UserService.Mappers;
 using UserService.Services;
 
 namespace UserService.Controllers
@@ -21,9 +21,9 @@ namespace UserService.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login( LoginRequestDto request)
+        public async Task<IActionResult> Login(LoginRequestDto request)
         {
-            
+
             try
             {
                 var user = await _userService.GetUserByEmailAsync(request.Email);
@@ -41,10 +41,24 @@ namespace UserService.Controllers
             }
             catch (Exception ex)
             {
-                
+
                 return BadRequest(ex.Message);
             }
-            
-        } 
+
+        }
+
+        // POST
+        [HttpPost("register")]
+        public async Task<ActionResult<UserReadDto>> CreateUser(UserCreateDto userDto)
+        {
+            var user = UserMapper.ToUser(userDto);
+            var createdUser = await _userService.CreateUserAsync(user);
+            var readDto = UserMapper.ToReadDto(createdUser);
+
+            return CreatedAtAction(nameof(UserController.GetUserById), new { id = createdUser.Id }, readDto);
+        }
+
+    
     }
+    
 }

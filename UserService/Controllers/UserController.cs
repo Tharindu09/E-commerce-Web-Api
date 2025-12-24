@@ -37,16 +37,6 @@ namespace UserService.Controllers
             return Ok(UserMapper.ToReadDto(user));
         }
 
-        // POST: api/User
-        [HttpPost]
-        public async Task<ActionResult<UserReadDto>> CreateUser(UserCreateDto userDto)
-        {
-            var user = UserMapper.ToUser(userDto);
-            var createdUser = await _userService.CreateUserAsync(user);
-            var readDto = UserMapper.ToReadDto(createdUser);
-
-            return CreatedAtAction(nameof(GetUserById), new { id = createdUser.Id }, readDto);
-        }
 
         // PUT: api/User/5
         [HttpPut("{id}")]
