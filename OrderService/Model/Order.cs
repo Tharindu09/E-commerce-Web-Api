@@ -24,6 +24,8 @@ public class Order
     [Required]
     public string OrderStatus { get; set; }
 
+    public decimal TotalAmount { get; set; }
+
     //Time metadata
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

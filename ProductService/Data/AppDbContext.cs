@@ -22,8 +22,13 @@ public class AppDbContext : DbContext
         .HasForeignKey<Inventory>(i => i.ProductId)
         .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<Inventory>().HasOne(i => i.StockReservation).WithOne(s=>s.Inventory).HasForeignKey<StockReservation>(s=>s.InventoryId).OnDelete(DeleteBehavior.Cascade);
-    }
+        modelBuilder.Entity<StockReservation>()
+        .HasOne(sr => sr.Inventory)
+        .WithMany(i => i.StockReservations)
+        .HasForeignKey(sr => sr.InventoryId)
+        .OnDelete(DeleteBehavior.Cascade);
+
+         }
     
 
 

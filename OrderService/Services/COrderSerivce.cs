@@ -13,21 +13,18 @@ public class COrderService : IOrderService
     private readonly AppDbContext _db;
     private readonly CartService.Grpc.CartService.CartServiceClient _cartClient;
     private readonly UserProfileService.UserProfileServiceClient _userClient;
-    private readonly IPaymentService _paymentService;
     private readonly ProductService.Grpc.ProductService.ProductServiceClient _productClient;
     private readonly ILogger<COrderService> _logger;
     public COrderService(
         AppDbContext db,
         CartService.Grpc.CartService.CartServiceClient cartClient,
         UserProfileService.UserProfileServiceClient userClient,
-        IPaymentService paymentService,
         ProductService.Grpc.ProductService.ProductServiceClient productClient,
         ILogger<COrderService> logger)
     {
         _db = db;
         _cartClient = cartClient;
         _userClient = userClient;
-        _paymentService = paymentService;
         _productClient = productClient;
         _logger = logger;
     }
@@ -80,6 +77,7 @@ public class COrderService : IOrderService
                 ShipProvince = o.ShipProvince,
                 ShipPostalCode = o.ShipPostalCode,
                 OrderStatus = o.OrderStatus,
+                TotalAmount = o.TotalAmount,
                 Items = o.Items.Select(i => new OrderItemDto
                 {
                     ProductId = i.ProductId,
@@ -135,6 +133,7 @@ public class COrderService : IOrderService
             ShipProvince = user.Province,
             ShipPostalCode = user.PostalCode,
             OrderStatus = OrderStatus.Draft.ToString(),
+            TotalAmount = cart.Items.Sum(i => (decimal)i.Price * i.Quantity),
             Items = cart.Items.Select(i => new OrderItem
             {
                 ProductId = i.ProductId,

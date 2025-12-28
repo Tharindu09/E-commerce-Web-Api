@@ -18,6 +18,7 @@ public class OrderDto
     public string ShipDistrict { get; set; } = "";
     public string ShipProvince { get; set; } = "";
     public string ShipPostalCode { get; set; } = "";
+    public decimal TotalAmount { get; set; }
 
     public string OrderStatus { get; set; } 
 

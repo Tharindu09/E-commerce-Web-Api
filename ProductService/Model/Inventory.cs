@@ -17,6 +17,6 @@ public class Inventory
 
     public Product Product { get; set; } // Navigation property to Product
 
-    public StockReservation StockReservation { get; set; } // Navigation property to StockReservation
+    public List<StockReservation> StockReservations { get; set; } // Navigation property to StockReservation
 
 }

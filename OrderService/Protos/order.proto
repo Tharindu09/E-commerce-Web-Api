@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option csharp_namespace = "OrderService.Grpc";
+
+package order;
+
+// Definition of the OrderService
+service OrderService {
+    // RPC method to get order details by order ID
+    rpc GetOrderById (OrderRequest) returns (OrderResponse);
+  
+}
+
+message OrderRequest {
+    int32 order_id = 1;
+}
+
+message OrderResponse {
+    int32 order_id = 1;
+    string user_name = 2;
+    double total_amount = 3;
+    string order_status = 4;
+}

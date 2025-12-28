@@ -9,10 +9,12 @@ namespace ProductService.Services;
 public class ProductGrpcService : Grpc.ProductService.ProductServiceBase
 {
     private readonly AppDbContext _context;
+    private readonly ILogger<ProductGrpcService> _logger;
 
-    public ProductGrpcService(AppDbContext context)
+    public ProductGrpcService(AppDbContext context, ILogger<ProductGrpcService> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     // UPDATE INVENTORY Total Stock(ADMIN USE ONLY)
@@ -131,18 +133,20 @@ public class ProductGrpcService : Grpc.ProductService.ProductServiceBase
             // Save all reservations at once
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
-
+            _logger.LogInformation("Stock reserved for order {OrderId}", request.OrderId);
             return response;
         }
         catch (RpcException)
         {
             // Rollback transaction automatically
             await tx.RollbackAsync();
+            _logger.LogError("Stock reservation failed for order {OrderId}", request.OrderId);
             throw;
         }
         catch (Exception ex)
         {
             await tx.RollbackAsync();
+            _logger.LogError(ex, "Error reserving stock for order {OrderId}", request.OrderId);
             throw new RpcException(new Status(
             StatusCode.Internal,
             "Failed to reserve stock"

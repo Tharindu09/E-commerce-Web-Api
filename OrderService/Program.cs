@@ -9,6 +9,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddGrpc();
+
 // -------------------- gRPC CLIENTS --------------------
 builder.Services.AddGrpcClient<CartService.Grpc.CartService.CartServiceClient>(o =>
 {
@@ -32,7 +34,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // -------------------- APPLICATION SERVICES --------------------
 builder.Services.AddScoped<IOrderService, COrderService>();
-builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 // -------------------- LOGGING --------------------
 builder.Logging.ClearProviders();
@@ -48,9 +49,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// app.UseHttpsRedirection();
-
+app.UseHttpsRedirection();
+app.UseRouting();
 app.UseAuthorization();
+app.MapGrpcService<OrderGrpcService>();
 app.MapControllers();
 
 app.Run();
