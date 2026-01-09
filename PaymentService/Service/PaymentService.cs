@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using PaymentService.Data;
 using PaymentService.Dtos;
 using PaymentService.Models;
+using Stripe;
 
 namespace PaymentService.Service;
 
@@ -12,16 +13,19 @@ public class PaymentService
     private readonly OrderService.Grpc.OrderService.OrderServiceClient _orderClient;
     private readonly PaymentDbContext _db;
     private readonly KafkaProducerService _kafkaProducer;
+
+    private readonly IPaymentGateway _paymentGateway;
     private const string Topic = "payment-events";
 
-    public PaymentService(OrderService.Grpc.OrderService.OrderServiceClient orderClient, PaymentDbContext db, KafkaProducerService kafkaProducer)
+    public PaymentService(OrderService.Grpc.OrderService.OrderServiceClient orderClient, PaymentDbContext db, KafkaProducerService kafkaProducer, IPaymentGateway paymentGateway)
     {
         _orderClient = orderClient;
+        _paymentGateway = paymentGateway;
         _db = db;
         _kafkaProducer = kafkaProducer;
     }
-    
-    public async Task<PaymentResponse> ProcessPaymentAsync(PaymentRequest request)
+
+    public async Task<PaymentResponse> ProcessPaymentAsync(GatewayPaymentRequest request)
     {
         // Check for existing payment with the same IdempotencyKey
         var existingPayment = await _db.Payments
@@ -67,7 +71,6 @@ public class PaymentService
             OrderId = request.OrderId,
             Amount = request.Amount,
             Currency = request.Currency,
-            PaymentType = request.PaymentType,
             Status = PaymentStatus.PENDING.ToString(),
             IdempotencyKey = request.IdempotencyKey
         };
@@ -75,26 +78,27 @@ public class PaymentService
         _db.Payments.Add(payment);
         await _db.SaveChangesAsync();
 
-        // Simulate payment processing logic
-        bool paymentSuccess = SimulateGatewayPayment();
+        // STRIPE payment processing logic
+        var intent = await _paymentGateway.ChargeAsync(new GatewayPaymentRequest
+        {
+            Amount = request.Amount,
+            Currency = request.Currency,
+            PaymentMethodId = request.PaymentMethodId,
+            IdempotencyKey = request.IdempotencyKey
+        });
 
-        payment.Status = paymentSuccess ? PaymentStatus.PAID.ToString() : PaymentStatus.FAILED.ToString();
+        payment.Status = intent.Created ? PaymentStatus.PROCESSING.ToString() : PaymentStatus.FAILED.ToString();
+        payment.GatewayPaymentIntentId = intent.PaymentIntentId;
         _db.Payments.Update(payment);
         await _db.SaveChangesAsync();
 
-        // Publish payment event to Kafka
-        await _kafkaProducer.ProduceAsync(JsonConvert.SerializeObject(new
-        {
-            PaymentId = payment.PaymentId,
-            OrderId = payment.OrderId,
-            Status = payment.Status
-        }));
-
+        
 
         return new PaymentResponse
         {
             PaymentId = payment.PaymentId,
-            PaymentStatus = payment.Status
+            PaymentStatus = payment.Status,
+            ClientSecret = intent.ClientSecret
         };
     }
 
@@ -105,12 +109,52 @@ public class PaymentService
         return response;
     }
 
-    private bool SimulateGatewayPayment()
+    public async Task HandlePaymentSucceeded(Event stripeEvent)
     {
-        // Fake random payment success/failure
-        return true;
-    }
-        
+        var intent = stripeEvent.Data.Object as PaymentIntent;
+        var idempotencyKey = intent.Metadata["IdempotencyKey"];
+        var payment = await _db.Payments
+            .FirstOrDefaultAsync(p => p.IdempotencyKey == idempotencyKey);
 
+        if (payment == null || payment.Status == PaymentStatus.PAID.ToString())
+            return;
+
+        payment.Status = PaymentStatus.PAID.ToString();
+        payment.GatewayChargeId = intent.Id;
+
+        _db.Payments.Update(payment);
+        await _db.SaveChangesAsync();
+
+        await _kafkaProducer.ProduceAsync(JsonConvert.SerializeObject(new
+        {
+            PaymentId = payment.PaymentId,
+            OrderId = payment.OrderId,
+            Status = payment.Status
+        }));
+        }
+
+    public async Task HandlePaymentFailed(Event stripeEvent)
+    {
+        var intent = stripeEvent.Data.Object as PaymentIntent;
+        var idempotencyKey = intent.Metadata["IdempotencyKey"]; 
+        var payment = await _db.Payments
+            .FirstOrDefaultAsync(p => p.IdempotencyKey == idempotencyKey);
+
+        if (payment == null || payment.Status == PaymentStatus.FAILED.ToString())
+            return;
+
+        payment.Status = PaymentStatus.FAILED.ToString();
+        payment.GatewayChargeId = intent.Id;
+
+        _db.Payments.Update(payment);
+        await _db.SaveChangesAsync();
+
+        await _kafkaProducer.ProduceAsync(JsonConvert.SerializeObject(new
+        {
+            PaymentId = payment.PaymentId,
+            OrderId = payment.OrderId,
+            Status = payment.Status
+        }));
+    }
 
 }

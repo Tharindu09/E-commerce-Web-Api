@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PaymentService.Data;
+using PaymentService.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,7 @@ builder.Services.AddDbContext<PaymentDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")
     )
 );
+builder.Services.AddScoped<IPaymentGateway, StripePaymentGateway>();
 
 // -------------------- gRPC CLIENTS --------------------
 builder.Services.AddGrpcClient<OrderService.Grpc.OrderService.OrderServiceClient>(o =>
@@ -22,6 +24,8 @@ builder.Services.AddGrpcClient<OrderService.Grpc.OrderService.OrderServiceClient
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+Stripe.StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

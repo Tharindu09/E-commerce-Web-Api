@@ -15,7 +15,7 @@ namespace PaymentService.Controller
         }
 
         [HttpPost("process")]
-        public async Task<IActionResult> Post([FromBody]PaymentRequest request)
+        public async Task<IActionResult> Post([FromBody]GatewayPaymentRequest request)
         {
             try
             {

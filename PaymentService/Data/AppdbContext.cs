@@ -14,6 +14,9 @@ namespace PaymentService.Data
             modelBuilder.Entity<Payment>()
                 .HasIndex(p => p.IdempotencyKey)
                 .IsUnique(); // Ensures idempotency
+            modelBuilder.Entity<Payment>()
+                .HasIndex(p => p.GatewayPaymentIntentId);
+        
         }
     }
 }
