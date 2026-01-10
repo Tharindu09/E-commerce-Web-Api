@@ -7,7 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-// builder.Services.AddSingleton<KafkaProducerService>();
+builder.Services.AddSingleton<KafkaProducerService>();
 builder.Services.AddScoped<PaymentService.Service.PaymentService>();
 builder.Services.AddDbContext<PaymentDbContext>(options =>
     options.UseNpgsql(

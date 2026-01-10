@@ -5,6 +5,7 @@ using PaymentService.Data;
 using PaymentService.Dtos;
 using PaymentService.Models;
 using Stripe;
+using Stripe.V2;
 
 namespace PaymentService.Service;
 
@@ -12,17 +13,17 @@ public class PaymentService
 {
     private readonly OrderService.Grpc.OrderService.OrderServiceClient _orderClient;
     private readonly PaymentDbContext _db;
-    // private readonly KafkaProducerService _kafkaProducer;
+    private readonly KafkaProducerService _kafkaProducer;
     private ILogger<PaymentService> _logger;
     private readonly IPaymentGateway _paymentGateway;
-    private const string Topic = "payment-events";
 
-    public PaymentService(OrderService.Grpc.OrderService.OrderServiceClient orderClient, PaymentDbContext db, IPaymentGateway paymentGateway, ILogger<PaymentService> logger)
+    public PaymentService(OrderService.Grpc.OrderService.OrderServiceClient orderClient, PaymentDbContext db, IPaymentGateway paymentGateway, ILogger<PaymentService> logger, KafkaProducerService kafkaProducer)
+    
     {
         _orderClient = orderClient;
         _paymentGateway = paymentGateway;
         _db = db;
-        // _kafkaProducer = kafkaProducer;
+        _kafkaProducer = kafkaProducer;
         _logger = logger;
     }
 
@@ -126,12 +127,13 @@ public class PaymentService
         _db.Payments.Update(payment);
         await _db.SaveChangesAsync();
 
-        // await _kafkaProducer.ProduceAsync(JsonConvert.SerializeObject(new
-        // {
-        //     PaymentId = payment.PaymentId,
-        //     OrderId = payment.OrderId,
-        //     Status = payment.Status
-        // }));
+        await _kafkaProducer.ProduceAsync(JsonConvert.SerializeObject(new
+        {
+            PaymentId = payment.PaymentId,
+            OrderId = payment.OrderId,
+            Amount = payment.Amount,
+            Status = payment.Status
+        }));
         }
 
     public async Task HandlePaymentFailed(Event stripeEvent)
@@ -150,12 +152,13 @@ public class PaymentService
         _db.Payments.Update(payment);
         await _db.SaveChangesAsync();
 
-        // await _kafkaProducer.ProduceAsync(JsonConvert.SerializeObject(new
-        // {
-        //     PaymentId = payment.PaymentId,
-        //     OrderId = payment.OrderId,
-        //     Status = payment.Status
-        // }));
+        await _kafkaProducer.ProduceAsync(JsonConvert.SerializeObject(new
+        {
+            PaymentId = payment.PaymentId,
+            OrderId = payment.OrderId,
+            Amount = payment.Amount,
+            Status = payment.Status
+        }));
     }
 
 }
