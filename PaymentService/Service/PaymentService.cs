@@ -12,17 +12,18 @@ public class PaymentService
 {
     private readonly OrderService.Grpc.OrderService.OrderServiceClient _orderClient;
     private readonly PaymentDbContext _db;
-    private readonly KafkaProducerService _kafkaProducer;
-
+    // private readonly KafkaProducerService _kafkaProducer;
+    private ILogger<PaymentService> _logger;
     private readonly IPaymentGateway _paymentGateway;
     private const string Topic = "payment-events";
 
-    public PaymentService(OrderService.Grpc.OrderService.OrderServiceClient orderClient, PaymentDbContext db, KafkaProducerService kafkaProducer, IPaymentGateway paymentGateway)
+    public PaymentService(OrderService.Grpc.OrderService.OrderServiceClient orderClient, PaymentDbContext db, IPaymentGateway paymentGateway, ILogger<PaymentService> logger)
     {
         _orderClient = orderClient;
         _paymentGateway = paymentGateway;
         _db = db;
-        _kafkaProducer = kafkaProducer;
+        // _kafkaProducer = kafkaProducer;
+        _logger = logger;
     }
 
     public async Task<PaymentResponse> ProcessPaymentAsync(GatewayPaymentRequest request)
@@ -86,7 +87,7 @@ public class PaymentService
             PaymentMethodId = request.PaymentMethodId,
             IdempotencyKey = request.IdempotencyKey
         });
-
+        _logger.LogInformation("Payment intent created with status: {Status} for Payment ID: {PaymentId}", intent, payment.PaymentId);
         payment.Status = intent.Created ? PaymentStatus.PROCESSING.ToString() : PaymentStatus.FAILED.ToString();
         payment.GatewayPaymentIntentId = intent.PaymentIntentId;
         _db.Payments.Update(payment);
@@ -125,12 +126,12 @@ public class PaymentService
         _db.Payments.Update(payment);
         await _db.SaveChangesAsync();
 
-        await _kafkaProducer.ProduceAsync(JsonConvert.SerializeObject(new
-        {
-            PaymentId = payment.PaymentId,
-            OrderId = payment.OrderId,
-            Status = payment.Status
-        }));
+        // await _kafkaProducer.ProduceAsync(JsonConvert.SerializeObject(new
+        // {
+        //     PaymentId = payment.PaymentId,
+        //     OrderId = payment.OrderId,
+        //     Status = payment.Status
+        // }));
         }
 
     public async Task HandlePaymentFailed(Event stripeEvent)
@@ -149,12 +150,12 @@ public class PaymentService
         _db.Payments.Update(payment);
         await _db.SaveChangesAsync();
 
-        await _kafkaProducer.ProduceAsync(JsonConvert.SerializeObject(new
-        {
-            PaymentId = payment.PaymentId,
-            OrderId = payment.OrderId,
-            Status = payment.Status
-        }));
+        // await _kafkaProducer.ProduceAsync(JsonConvert.SerializeObject(new
+        // {
+        //     PaymentId = payment.PaymentId,
+        //     OrderId = payment.OrderId,
+        //     Status = payment.Status
+        // }));
     }
 
 }

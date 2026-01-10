@@ -6,10 +6,16 @@ namespace PaymentService.Service;
 
 public class StripePaymentGateway : IPaymentGateway
 {
+    private readonly ILogger<StripePaymentGateway> _logger;
+    public StripePaymentGateway(ILogger<StripePaymentGateway> logger)
+    {
+        _logger = logger;
+    }
+    
     public async Task<GatewayPaymentResult> ChargeAsync(GatewayPaymentRequest request)
     {   
         try
-        {
+        {   _logger.LogInformation("Initiating charge with Stripe for Amount: {Amount}, Currency: {Currency}", request.Amount, request.Currency);
             var options = new PaymentIntentCreateOptions
             {
                 Amount = (long)(request.Amount * 100), // Stripe expects amount in cents
@@ -22,7 +28,9 @@ public class StripePaymentGateway : IPaymentGateway
                 },
                 AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
                 {
-                    Enabled = true
+                    Enabled = true,
+                    AllowRedirects = "never"
+
                 }
 
             };
@@ -48,7 +56,7 @@ public class StripePaymentGateway : IPaymentGateway
         }
         catch (StripeException ex)
         {
-            
+            _logger.LogError(ex, "Stripe error occurred: {Message}", ex.Message);
             return new GatewayPaymentResult
             {
                 Created = false,

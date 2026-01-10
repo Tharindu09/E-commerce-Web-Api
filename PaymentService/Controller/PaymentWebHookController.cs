@@ -12,12 +12,16 @@ namespace PaymentService.Controller
         private readonly IConfiguration _config;
         private readonly Service.PaymentService _service;
 
+        private readonly ILogger<PaymentsWebhookController> _logger;
+
         public PaymentsWebhookController(
             Service.PaymentService service,
-            IConfiguration config)
+            IConfiguration config,
+            ILogger<PaymentsWebhookController> logger)
         {   
             _service = service;
             _config = config;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -38,11 +42,12 @@ namespace PaymentService.Controller
             }
             catch (Exception)
             {
+                _logger.LogError("Failed to parse webhook");
                 return Unauthorized();
             }
-
+            _logger.LogInformation("Received Stripe webhook: {EventType}", stripeEvent.Type);
             switch (stripeEvent.Type)
-            {
+            {   
                 case "payment_intent.succeeded":
                     await _service.HandlePaymentSucceeded(stripeEvent);
                     break;
