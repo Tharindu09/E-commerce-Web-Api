@@ -20,7 +20,12 @@ builder.Services.AddScoped<IPaymentGateway, StripePaymentGateway>();
 builder.Services.AddGrpcClient<OrderService.Grpc.OrderService.OrderServiceClient>(o =>
 {
     o.Address = new Uri("https://localhost:7143");
+
 });
+
+
+
+
 builder.Services.AddControllers();
 
 var app = builder.Build();

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
 using OrderService.Dtos;
 using OrderService.Model;
+using PaymentService.Dtos;
 using ProductService.Grpc;
 using UserService.Grpc;
 
@@ -187,5 +188,33 @@ public class COrderService : IOrderService
             new CancelReservationRequest { OrderId = orderId });
     }
 
-
+    public async Task<Order> UpdateOrderAsync(PaymentKafkaDto paymentInfo)
+    {
+        var status = paymentInfo.Status.ToLower();
+        var order = _db.Orders.Include(o => o.Items)
+            .FirstOrDefault(o => o.Id == paymentInfo.OrderId);
+        if (order == null)
+        {
+            throw new Exception("Order not found.");
+        }
+        if (status == "completed")
+        {
+            order.OrderStatus = OrderStatus.Paid.ToString();
+            _db.Orders.Add(order);
+            await _db.SaveChangesAsync();
+            return order;
+        }
+        else if (status == "failed")
+        {
+            order.OrderStatus = OrderStatus.PendingPayment.ToString();
+            _db.Orders.Add(order);
+            await _db.SaveChangesAsync();
+            return order;
+        }
+        else
+        {
+            _logger.LogWarning("Unknown payment status: {Status}", paymentInfo.Status);
+            throw new Exception("Unknown payment status.");
+        }
+    }
 }

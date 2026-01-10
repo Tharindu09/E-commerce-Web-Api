@@ -27,6 +27,13 @@ builder.Services.AddGrpcClient<ProductService.Grpc.ProductService.ProductService
     o.Address = new Uri("https://localhost:7133");
 });
 
+// -------------------- Kafka --------------------
+// Bind Kafka settings from appsettings.json
+builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
+
+// Add Kafka consumer as hosted service
+builder.Services.AddHostedService<KafkaConsumerService>();
+
 // -------------------- DATABASE --------------------
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
