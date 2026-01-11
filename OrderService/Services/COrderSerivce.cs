@@ -197,24 +197,22 @@ public class COrderService : IOrderService
         {
             throw new Exception("Order not found.");
         }
-        if (status == "completed")
+        if (status == "paid")
         {
             order.OrderStatus = OrderStatus.Paid.ToString();
-            _db.Orders.Add(order);
-            await _db.SaveChangesAsync();
-            return order;
+
         }
         else if (status == "failed")
         {
             order.OrderStatus = OrderStatus.PendingPayment.ToString();
-            _db.Orders.Add(order);
-            await _db.SaveChangesAsync();
-            return order;
+
         }
         else
         {
             _logger.LogWarning("Unknown payment status: {Status}", paymentInfo.Status);
             throw new Exception("Unknown payment status.");
         }
+        await _db.SaveChangesAsync();
+        return order;
     }
 }
