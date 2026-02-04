@@ -56,16 +56,34 @@ public class CartController : ControllerBase
         }
     }
 
-    [HttpDelete("{userId}/remove/{productId}")]
-    public async Task<IActionResult> RemoveItem(int userId, int productId)
+    [HttpDelete("my/remove/{productId}")]
+    public async Task<IActionResult> RemoveItem(int productId)
     {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirstValue("sub");
+
+        if (string.IsNullOrWhiteSpace(userIdStr))
+            return Unauthorized("Missing user id claim.");
+
+        if (!int.TryParse(userIdStr, out var userId))
+            return Unauthorized("Invalid user id claim.");
+
         var result = await _cartService.RemoveItemAsync(userId, productId);
         return Ok(result);
     }
 
-    [HttpDelete("{userId}/clear")]
-    public async Task<IActionResult> ClearCart(int userId)
+    [HttpDelete("my/clear")]
+    public async Task<IActionResult> ClearCart()
     {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirstValue("sub");
+
+        if (string.IsNullOrWhiteSpace(userIdStr))
+            return Unauthorized("Missing user id claim.");
+
+        if (!int.TryParse(userIdStr, out var userId))
+            return Unauthorized("Invalid user id claim.");
+
         var result = await _cartService.ClearCartAsync(userId);
         return Ok(result);
     }
