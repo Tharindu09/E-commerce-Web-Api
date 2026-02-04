@@ -30,7 +30,7 @@ public class COrderService : IOrderService
         _logger = logger;
     }
 
-    public async Task<int> CreateOrderAsync(int userId)
+    public async Task<int> CreateOrderAsync(int userId, AddressDto addressDto)
     {
         // Fetch cart
         var cart = await GetCartAsync(userId);
@@ -45,7 +45,7 @@ public class COrderService : IOrderService
 
         try
         {
-            order = await CreateDraftOrderAsync(user, cart);
+            order = await CreateDraftOrderAsync(user,addressDto, cart);
             await ReserveStockAsync(order.Id, cart);
             await FinalizeOrderAsync(order);
 
@@ -119,6 +119,7 @@ public class COrderService : IOrderService
 
     private async Task<Order> CreateDraftOrderAsync(
     UserProfileResponse user,
+    AddressDto addressDto,
     CartService.Grpc.CartResponse cart)
     {
         var order = new Order
@@ -127,12 +128,11 @@ public class COrderService : IOrderService
             UserName = user.Name,
             UserEmail = user.Email,
             UserPhone = user.Phone,
-            ShipLine1 = user.AddressLine1,
-            ShipLine2 = user.AddressLine2,
-            ShipCity = user.City,
-            ShipDistrict = user.District,
-            ShipProvince = user.Province,
-            ShipPostalCode = user.PostalCode,
+            ShipLine1 = addressDto.Address1,
+            ShipLine2 = addressDto.Address2,
+            ShipCity = addressDto.City,
+            ShipDistrict = addressDto.Country,
+            ShipPostalCode = addressDto.PostalCode,
             OrderStatus = OrderStatus.Draft.ToString(),
             TotalAmount = cart.Items.Sum(i => (decimal)i.Price * i.Quantity),
             Items = cart.Items.Select(i => new OrderItem

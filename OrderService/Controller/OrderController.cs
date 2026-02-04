@@ -2,8 +2,8 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OrderService.Dtos;
-using OrderService.Model;
 using OrderService.Services;
+
 
 namespace OrderService.Controller
 {
@@ -37,7 +37,7 @@ namespace OrderService.Controller
         [Authorize]
         [HttpPost]
         [Route("create")]
-        public async Task<IActionResult> CreateOrder()
+        public async Task<IActionResult> CreateOrder(AddressDto addressDto)
         {
 
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -51,7 +51,7 @@ namespace OrderService.Controller
 
             try
             {
-                var orderId = await _orderService.CreateOrderAsync(userId);
+                var orderId = await _orderService.CreateOrderAsync(userId,addressDto);
                 return Ok(new { OrderId = orderId });
             }
             catch (Exception ex)
