@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using CartService.Model;
 using CartService.Services;
 using CartService.Dtos;
+using System.Security.Claims;
 
 namespace CartService.Controllers;
 
@@ -15,18 +16,34 @@ public class CartController : ControllerBase
     {
         _cartService = cartService;
     }
-    
-    [HttpGet("{userId}")]
-    public async Task<IActionResult> GetCart(int userId)
-    {
+
+    [HttpGet("my")]
+    public async Task<IActionResult> GetCart()
+    {    var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirstValue("sub");
+
+            if (string.IsNullOrWhiteSpace(userIdStr))
+                return Unauthorized("Missing user id claim.");
+
+            if (!int.TryParse(userIdStr, out var userId))
+                return Unauthorized("Invalid user id claim.");
         var cart = await _cartService.GetCartAsync(userId);
         return Ok(cart ?? new Cart { UserId = userId });
     }
 
 
-    [HttpPost("{userId}/add")]
-    public async Task<IActionResult> AddToCart(int userId, CartAddRequest req)
+    [HttpPost("my/add")]
+    public async Task<IActionResult> AddToCart(CartAddRequest req)
     {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirstValue("sub");
+
+        if (string.IsNullOrWhiteSpace(userIdStr))
+            return Unauthorized("Missing user id claim.");
+
+        if (!int.TryParse(userIdStr, out var userId))
+            return Unauthorized("Invalid user id claim.");
+
         try
         {
             var cart = await _cartService.AddToCartAsync(userId, req.ProductId, req.Quantity);
