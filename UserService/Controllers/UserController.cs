@@ -74,7 +74,7 @@ namespace UserService.Controllers
         [Authorize]
         [HttpGet("me")]
         public async Task<ActionResult<UserReadDto>> GetMyProfile()
-        {   _logger.LogInformation("Fetching profile for authenticated user.");
+        {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
                          ?? User.FindFirstValue("sub");
 
@@ -89,6 +89,56 @@ namespace UserService.Controllers
                 return NotFound();
 
             return Ok(UserMapper.ToReadDto(user));
+        }
+
+        [Authorize]
+        [HttpPost("address")]
+        public async Task<IActionResult> AddAddress(AddressDto addressDto)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirstValue("sub");
+
+            if (string.IsNullOrWhiteSpace(userIdStr))
+                return Unauthorized("Missing user id claim.");
+
+            if (!int.TryParse(userIdStr, out var userId))
+                return Unauthorized("Invalid user id claim.");
+
+            var result = await _userService.AddAddressAsync(userId, addressDto);
+            if (!result)
+                return BadRequest("Failed to add address.");
+
+            return Ok();
+        }
+
+        [Authorize]
+        [HttpGet("address")]
+        public async Task<ActionResult<List<AddressDto>>> GetMyAddress()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirstValue("sub");
+
+            if (string.IsNullOrWhiteSpace(userIdStr))
+                return Unauthorized("Missing user id claim.");
+
+            if (!int.TryParse(userIdStr, out var userId))
+                return Unauthorized("Invalid user id claim.");
+
+            List<Address> addresses = await _userService.GetAddressByUserIdAsync(userId);
+            if (addresses == null || addresses.Count == 0)
+                return NotFound();
+
+            var addressDtos = addresses.Select(address => new AddressDto
+            {   UserId = address.UserId,
+                AddressLine1 = address.AddressLine1,
+                AddressLine2 = address.AddressLine2,
+                City = address.City,
+                Country = address.Country,
+                Phone = address.Phone,
+                PostalCode = address.PostalCode
+            });
+
+            return Ok(addressDtos);
         }
     }
 }

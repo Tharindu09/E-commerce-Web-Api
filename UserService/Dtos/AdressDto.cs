@@ -2,7 +2,7 @@ namespace UserService.Dtos;
 
 public class AddressDto
 {   
-    
+    public int UserId { get; set; }
     public string Phone { get; set; }
     public string AddressLine1 { get; set; }
     public string AddressLine2 { get; set; }

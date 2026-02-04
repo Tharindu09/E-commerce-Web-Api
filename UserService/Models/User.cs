@@ -15,7 +15,7 @@ public class User
         [Required]
         public string Password { get; set; } = default!;
 
-        public List<Address> Address { get; set; } = default!;
+        public List<Address> Addresses { get; set; } = default!;
 
         public string Role { get; set; } = "User";
 

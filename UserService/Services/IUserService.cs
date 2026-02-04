@@ -1,3 +1,4 @@
+using UserService.Dtos;
 using UserService.Models;
 
 namespace UserService.Services;
@@ -11,6 +12,10 @@ public interface IUserService
     Task<bool> DeleteUserAsync(int id);
     bool VerifyPassword(User user, string password);
     Task<User> GetUserByEmailAsync(string email);
+
+    Task<bool> AddAddressAsync(int userId, AddressDto addressDto);
+
+    Task<List<Address>?> GetAddressByUserIdAsync(int userId);
 
 
 }

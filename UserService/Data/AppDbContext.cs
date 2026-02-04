@@ -23,10 +23,10 @@ public class AppDbContext : DbContext
             entity.Property(u => u.Id).UseIdentityAlwaysColumn(); // Auto-increment
             entity.HasIndex(u => u.Email).IsUnique();
 
-            // One-to-one relationship
-            entity.HasOne(u =>u.Address)    // User has one Address
+            // One-to-many relationship
+            entity.HasMany(u => u.Addresses)    // User has many Addresses
                   .WithOne(a => a.User)      // Address has one User
-                  .HasForeignKey<Address>(a => a.UserId) // FK is in Address
+                  .HasForeignKey(a => a.UserId) // FK is in Address
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }
