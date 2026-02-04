@@ -12,4 +12,5 @@ public interface IUserService
     bool VerifyPassword(User user, string password);
     Task<User> GetUserByEmailAsync(string email);
 
+
 }

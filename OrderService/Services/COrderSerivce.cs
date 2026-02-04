@@ -215,4 +215,34 @@ public class COrderService : IOrderService
         await _db.SaveChangesAsync();
         return order;
     }
+
+    public Task<OrderDto> GetMyOrdersAsync(int userId)
+    {
+        var order = _db.Orders.Include(o => o.Items).Where(o => o.UserId == userId)
+            .Select(o => new OrderDto
+            {
+                Id = o.Id,
+                UserName = o.UserName,
+                UserEmail = o.UserEmail,
+                UserPhone = o.UserPhone,
+                ShipLine1 = o.ShipLine1,
+                ShipLine2 = o.ShipLine2,
+                ShipCity = o.ShipCity,
+                ShipDistrict = o.ShipDistrict,
+                ShipProvince = o.ShipProvince,
+                ShipPostalCode = o.ShipPostalCode,
+                OrderStatus = o.OrderStatus,
+                TotalAmount = o.TotalAmount,
+                Items = o.Items.Select(i => new OrderItemDto
+                {
+                    ProductId = i.ProductId,
+                    ProductName = i.ProductName,
+                    Quantity = i.Quantity,
+                    PriceAtPurchase = i.PriceAtPurchase
+                }).ToList()
+            })
+            .FirstOrDefaultAsync();
+
+            return order;
+    }
 }

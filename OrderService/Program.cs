@@ -42,6 +42,23 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // -------------------- APPLICATION SERVICES --------------------
 builder.Services.AddScoped<IOrderService, COrderService>();
 
+// -------------------- AUTHENTICATION & AUTHORIZATION --------------------
+var jwt = builder.Configuration.GetSection("Jwt");
+builder.Services.AddAuthentication().AddJwtBearer(Option =>
+{
+    Option.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwt["Issuer"],
+        ValidAudience = jwt["Audience"],
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwt["Key"]))
+    };
+});
+builder.Services.AddAuthorization();
+
 // -------------------- LOGGING --------------------
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
@@ -58,6 +75,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapGrpcService<OrderGrpcService>();
 app.MapControllers();

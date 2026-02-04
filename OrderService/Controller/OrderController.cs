@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OrderService.Dtos;
 using OrderService.Model;
@@ -15,6 +17,7 @@ namespace OrderService.Controller
             _orderService = orderService;
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         [Route("{orderId}")]
         public async Task<IActionResult> GetOrderById(int orderId)
@@ -27,14 +30,25 @@ namespace OrderService.Controller
             catch (Exception ex)
             {
                 return BadRequest($"Could not retrieve order: {ex.Message}");
-            } 
+            }
 
         }
 
+        [Authorize]
         [HttpPost]
-        [Route("create/{userId}")]
-        public async Task<IActionResult> CreateOrder(int userId)
+        [Route("create")]
+        public async Task<IActionResult> CreateOrder()
         {
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                        ?? User.FindFirstValue("sub");
+
+            if (string.IsNullOrWhiteSpace(userIdStr))
+                return Unauthorized("Missing user id claim.");
+
+            if (!int.TryParse(userIdStr, out var userId))
+                return Unauthorized("Invalid user id claim.");
+
             try
             {
                 var orderId = await _orderService.CreateOrderAsync(userId);
@@ -43,6 +57,30 @@ namespace OrderService.Controller
             catch (Exception ex)
             {
                 return BadRequest($"Could not create order: {ex.Message}");
+            }
+        }
+        
+        [Authorize]
+        [HttpGet("myorders")]
+        public async Task<IActionResult> GetMyOrders()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                        ?? User.FindFirstValue("sub");
+
+            if (string.IsNullOrWhiteSpace(userIdStr))
+                return Unauthorized("Missing user id claim.");
+
+            if (!int.TryParse(userIdStr, out var userId))
+                return Unauthorized("Invalid user id claim.");
+
+            try
+            {
+                var orders = await _orderService.GetMyOrdersAsync(userId);
+                return Ok(orders);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Could not retrieve orders: {ex.Message}");
             }
         }
     }

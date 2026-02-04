@@ -3,6 +3,8 @@ using UserService.Dtos;
 using UserService.Models;
 using UserService.Services;
 using UserService.Mappers;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace UserService.Controllers
 {
@@ -11,13 +13,15 @@ namespace UserService.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
-
-        public UserController(IUserService userService)
+        private readonly ILogger<UserController> _logger;
+        public UserController(IUserService userService, ILogger<UserController> logger)
         {
             _userService = userService;
+            _logger = logger;
         }
 
         // GET: api/User
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserReadDto>>> GetAllUsers()
         {
@@ -27,6 +31,7 @@ namespace UserService.Controllers
         }
 
         // GET: api/User/5
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
         public async Task<ActionResult<UserReadDto>> GetUserById(int id)
         {
@@ -39,6 +44,7 @@ namespace UserService.Controllers
 
 
         // PUT: api/User/5
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, UserCreateDto userDto)
         {
@@ -53,6 +59,7 @@ namespace UserService.Controllers
         }
 
         // DELETE: api/User/5
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
@@ -61,6 +68,27 @@ namespace UserService.Controllers
                 return NotFound();
 
             return NoContent();
+        }
+
+        //get user profile
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<ActionResult<UserReadDto>> GetMyProfile()
+        {   _logger.LogInformation("Fetching profile for authenticated user.");
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirstValue("sub");
+
+            if (string.IsNullOrWhiteSpace(userIdStr))
+                return Unauthorized("Missing user id claim.");
+
+            if (!int.TryParse(userIdStr, out var userId))
+                return Unauthorized("Invalid user id claim.");
+
+            var user = await _userService.GetUserByIdAsync(userId);
+            if (user == null)
+                return NotFound();
+
+            return Ok(UserMapper.ToReadDto(user));
         }
     }
 }
