@@ -30,7 +30,19 @@ public class CUserService : IUserService
     {
         // Hash the password before saving
         user.Password = passwordHasher.HashPassword(user, user.Password);
-
+        try
+        {
+            var existingUser = await appDbContext.Users
+                .FirstOrDefaultAsync(u => u.Email == user.Email);
+            if (existingUser != null)
+            {
+                throw new Exception("Email already in use");
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error checking existing user: {ex.Message}");
+        }
         appDbContext.Users.Add(user);
         await appDbContext.SaveChangesAsync();
         return user;

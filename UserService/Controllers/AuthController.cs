@@ -50,12 +50,18 @@ namespace UserService.Controllers
         // POST
         [HttpPost("register")]
         public async Task<ActionResult<UserReadDto>> CreateUser(UserCreateDto userDto)
-        {
-            var user = UserMapper.ToUser(userDto);
-            var createdUser = await _userService.CreateUserAsync(user);
-            var readDto = UserMapper.ToReadDto(createdUser);
-
-            return CreatedAtAction(nameof(UserController.GetUserById), new { id = createdUser.Id }, readDto);
+        {   try
+            {
+                var user = UserMapper.ToUser(userDto);
+                var createdUser = await _userService.CreateUserAsync(user);
+                var readDto = UserMapper.ToReadDto(createdUser);
+                return Created(readDto.Id.ToString(), readDto);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            
         }
 
     
