@@ -15,12 +15,14 @@ public class OrderDto
     public string ShipLine1 { get; set; } = "";
     public string ShipLine2 { get; set; } = "";
     public string ShipCity { get; set; } = "";
-    public string ShipDistrict { get; set; } = "";
-    public string ShipProvince { get; set; } = "";
+    public string ShipCountry { get; set; } = "";
     public string ShipPostalCode { get; set; } = "";
     public decimal TotalAmount { get; set; }
 
     public string OrderStatus { get; set; } 
+
+    public DateTime Date { get; set; } 
+
 
     public List<OrderItemDto> Items { get; set; }
 }

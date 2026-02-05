@@ -17,7 +17,7 @@ namespace OrderService.Controller
             _orderService = orderService;
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         [HttpGet]
         [Route("{orderId}")]
         public async Task<IActionResult> GetOrderById(int orderId)

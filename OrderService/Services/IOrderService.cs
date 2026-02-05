@@ -11,5 +11,5 @@ public interface IOrderService
 
     Task<Order> UpdateOrderAsync(PaymentKafkaDto paymentInfo);
 
-    Task<OrderDto> GetMyOrdersAsync(int userId);
+    Task<List<OrderDto>> GetMyOrdersAsync(int userId);
 }

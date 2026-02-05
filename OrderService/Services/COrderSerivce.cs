@@ -74,11 +74,11 @@ public class COrderService : IOrderService
                 ShipLine1 = o.ShipLine1,
                 ShipLine2 = o.ShipLine2,
                 ShipCity = o.ShipCity,
-                ShipDistrict = o.ShipDistrict,
-                ShipProvince = o.ShipProvince,
+                ShipCountry = o.ShipCountry,
                 ShipPostalCode = o.ShipPostalCode,
                 OrderStatus = o.OrderStatus,
                 TotalAmount = o.TotalAmount,
+                Date = o.CreatedAt,
                 Items = o.Items.Select(i => new OrderItemDto
                 {
                     ProductId = i.ProductId,
@@ -127,11 +127,11 @@ public class COrderService : IOrderService
             UserId = user.UserId,
             UserName = user.Name,
             UserEmail = user.Email,
-            UserPhone = user.Phone,
+            UserPhone = addressDto.Phone,
             ShipLine1 = addressDto.Address1,
             ShipLine2 = addressDto.Address2,
             ShipCity = addressDto.City,
-            ShipDistrict = addressDto.Country,
+            ShipCountry = addressDto.Country,
             ShipPostalCode = addressDto.PostalCode,
             OrderStatus = OrderStatus.Draft.ToString(),
             TotalAmount = cart.Items.Sum(i => (decimal)i.Price * i.Quantity),
@@ -216,33 +216,35 @@ public class COrderService : IOrderService
         return order;
     }
 
-    public Task<OrderDto> GetMyOrdersAsync(int userId)
-    {
-        var order = _db.Orders.Include(o => o.Items).Where(o => o.UserId == userId)
-            .Select(o => new OrderDto
+    public async Task<List<OrderDto>> GetMyOrdersAsync(int userId)
+{
+    var orders = await _db.Orders
+        .Where(o => o.UserId == userId)
+        .Select(o => new OrderDto
+        {
+            Id = o.Id,
+            UserName = o.UserName,
+            UserEmail = o.UserEmail,
+            UserPhone = o.UserPhone,
+            ShipLine1 = o.ShipLine1,
+            ShipLine2 = o.ShipLine2,
+            ShipCity = o.ShipCity,
+            ShipCountry = o.ShipCountry,
+            ShipPostalCode = o.ShipPostalCode,
+            OrderStatus = o.OrderStatus,
+            TotalAmount = o.TotalAmount,
+Date = o.CreatedAt,
+            Items = o.Items.Select(i => new OrderItemDto
             {
-                Id = o.Id,
-                UserName = o.UserName,
-                UserEmail = o.UserEmail,
-                UserPhone = o.UserPhone,
-                ShipLine1 = o.ShipLine1,
-                ShipLine2 = o.ShipLine2,
-                ShipCity = o.ShipCity,
-                ShipDistrict = o.ShipDistrict,
-                ShipProvince = o.ShipProvince,
-                ShipPostalCode = o.ShipPostalCode,
-                OrderStatus = o.OrderStatus,
-                TotalAmount = o.TotalAmount,
-                Items = o.Items.Select(i => new OrderItemDto
-                {
-                    ProductId = i.ProductId,
-                    ProductName = i.ProductName,
-                    Quantity = i.Quantity,
-                    PriceAtPurchase = i.PriceAtPurchase
-                }).ToList()
-            })
-            .FirstOrDefaultAsync();
+                ProductId = i.ProductId,
+                ProductName = i.ProductName,
+                Quantity = i.Quantity,
+                PriceAtPurchase = i.PriceAtPurchase
+            }).ToList()
+        })
+        .ToListAsync();
 
-            return order;
-    }
+    return orders;
+}
+
 }
