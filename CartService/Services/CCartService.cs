@@ -15,7 +15,7 @@ public class CCartService : ICartService
         _redis = redis.GetDatabase();
         _client = client;
     }
-        public async Task<Cart?> GetCartAsync(int userId)
+    public async Task<Cart?> GetCartAsync(int userId)
     {
         var data =await _redis.StringGetAsync($"cart:{userId}");
         if (data.IsNullOrEmpty) return null;
@@ -46,6 +46,7 @@ public class CCartService : ICartService
         {
             ProductId = productId,
             ProductName = product.Name,
+            ProductImageUrl = product.ImageUrl,
             Price = (decimal)product.Price,
             Quantity = quantity
         });

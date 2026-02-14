@@ -23,7 +23,8 @@ public class CProductService : IProductService
             Name = dto.Name,
             Description = dto.Description,
             Price = dto.Price,
-            Category = dto.Category
+            Category = dto.Category,
+            ImageUrl = dto.ImageUrl
         };
 
         // Create inventory row

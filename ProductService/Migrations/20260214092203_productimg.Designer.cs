@@ -12,8 +12,8 @@ using ProductService.Data;
 namespace ProductService.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251228110517_fixIndex")]
-    partial class fixIndex
+    [Migration("20260214092203_productimg")]
+    partial class productimg
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -63,6 +63,10 @@ namespace ProductService.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ImageUrl")
                         .IsRequired()
                         .HasColumnType("text");
 

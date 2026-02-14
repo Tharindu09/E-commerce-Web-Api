@@ -30,5 +30,6 @@ message GetProductResponse{
     double price = 2 ;
     string category =3 ;
     int32 stock = 4;
+    string image_url = 5;
  
 }

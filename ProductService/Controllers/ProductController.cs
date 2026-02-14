@@ -19,59 +19,95 @@ public class ProductController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateProduct(ProductCreateDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        var product = await _productService.CreateProductAsync(dto);
-
-        var readDto = new ProductReadDto
+        try
         {
-            Id = product.Id,
-            Name = product.Name,
-            Price = product.Price,
-            Category = product.Category,
-            Stock = product.Inventory.TotalStock
-        };
+            if (dto.InitialStock < 0)
+                return BadRequest("Initial stock cannot be negative");
+                
+            var product = await _productService.CreateProductAsync(dto);
 
-        return CreatedAtAction(nameof(GetProductById), new { id = readDto.Id }, readDto);
+            var readDto = new ProductReadDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Price = product.Price,
+                Category = product.Category,
+                Stock = product.Inventory.TotalStock,
+                ImageUrl = product.ImageUrl
+            };
+
+            return CreatedAtAction(nameof(GetProductById), new { id = readDto.Id }, readDto);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+        
+
+        
     }
 
     // GET ALL PRODUCTS
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ProductReadDto>>> GetAll()
     {
-        var products = await _productService.GetAllProductsAsync();
-
-        var result = products.Select(p => new ProductReadDto
+        try
         {
-            Id = p.Id,
-            Name = p.Name,
-            Price = p.Price,
-            Category = p.Category,
-            Stock = p.Inventory.AvailableStock
-        });
-
-        return Ok(result);
+                var products = await _productService.GetAllProductsAsync();
+    
+                var result = products.Select(p => new ProductReadDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Price = p.Price,
+                    Category = p.Category,
+                    Stock = p.Inventory.AvailableStock,
+                    ImageUrl = p.ImageUrl,
+                    Description = p.Description
+                }).ToList();
+    
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+        
     }
 
     // GET BY ID
     [HttpGet("{id}")]
     public async Task<ActionResult<ProductReadDto>> GetProductById(int id)
-    {
-        var product = await _productService.GetProductByIdAsync(id);
-
-        if (product == null)
-            return NotFound("Product not found");
-
-        var readDto = new ProductReadDto
+    {   try
         {
-            Id = product.Id,
-            Name = product.Name,
-            Price = product.Price,
-            Category = product.Category,
-            Stock = product.Inventory.AvailableStock
-        };
+             var product = await _productService.GetProductByIdAsync(id);
 
-        return Ok(readDto);
+            if (product == null)
+                return NotFound("Product not found");
+
+            var readDto = new ProductReadDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Price = product.Price,
+                Category = product.Category,
+                Stock = product.Inventory.AvailableStock,
+                ImageUrl = product.ImageUrl,
+                Description = product.Description
+            };
+
+            return Ok(readDto);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+       
+    }
+
+    //Test endpoint to return 500 error
+    [HttpGet("error")]
+    public IActionResult GetError()
+    {   return StatusCode(500, "This is a test error message.");
     }
 }

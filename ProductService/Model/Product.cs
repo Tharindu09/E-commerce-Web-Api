@@ -14,6 +14,8 @@ public class Product
     public decimal Price { get; set; }
     [Required]
     public string Category { get; set; } = default!;
+    [Required]
+    public string ImageUrl { get; set; } = default!;
     
     // Relation
     public Inventory Inventory { get; set; }

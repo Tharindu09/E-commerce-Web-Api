@@ -24,24 +24,15 @@ public class ProductGrpcService : Grpc.ProductService.ProductServiceBase
 
         if (product == null)
         {
-            return new UpdateInventoryResponse
-            {
-                Success = false,
-                Message = "Product not found",
-                NewStock = 0
-            };
+            throw new RpcException(new Status(StatusCode.NotFound, "Product not found"));
         }
 
         product.Inventory.TotalStock += request.QuantityChange;
+        product.Inventory.AvailableStock += request.QuantityChange;
 
         if (product.Inventory.TotalStock < 0)
         {
-            return new UpdateInventoryResponse
-            {
-                Success = false,
-                Message = "Not enough quantity",
-                NewStock = 0
-            };
+            throw new RpcException(new Status(StatusCode.FailedPrecondition, "Total stock cannot be negative"));
         }
 
         await _context.SaveChangesAsync();
@@ -70,7 +61,8 @@ public class ProductGrpcService : Grpc.ProductService.ProductServiceBase
             Name = product.Name,
             Price = (double)product.Price,
             Category = product.Category,
-            Stock = product.Inventory.AvailableStock
+            Stock = product.Inventory.AvailableStock,
+            ImageUrl = product.ImageUrl
         };
 
         return response;
@@ -122,6 +114,7 @@ public class ProductGrpcService : Grpc.ProductService.ProductServiceBase
 
                 _context.StockReservations.Add(reservation);
                 reservations.Add(reservation);
+            
                 response.Results.Add(new StockReservationResult
                 {
                     ProductId = item.ProductId,

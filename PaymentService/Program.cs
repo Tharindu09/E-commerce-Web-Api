@@ -23,9 +23,22 @@ builder.Services.AddGrpcClient<OrderService.Grpc.OrderService.OrderServiceClient
 
 });
 
-
-
-
+// JWT Authentication
+var jwtsettings = builder.Configuration.GetSection("Jwt");
+builder.Services.AddAuthentication().AddJwtBearer(Option =>
+{
+    Option.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtsettings["Issuer"],
+        ValidAudience = jwtsettings["Audience"],
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtsettings["Key"]))
+    };
+});
+builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -39,8 +52,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
 app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 

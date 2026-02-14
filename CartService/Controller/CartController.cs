@@ -3,6 +3,7 @@ using CartService.Model;
 using CartService.Services;
 using CartService.Dtos;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CartService.Controllers;
 
@@ -18,6 +19,7 @@ public class CartController : ControllerBase
     }
 
     [HttpGet("my")]
+    [Authorize]
     public async Task<IActionResult> GetCart()
     {    var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
                          ?? User.FindFirstValue("sub");
@@ -33,6 +35,7 @@ public class CartController : ControllerBase
 
 
     [HttpPost("my/add")]
+    [Authorize]
     public async Task<IActionResult> AddToCart(CartAddRequest req)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -57,6 +60,7 @@ public class CartController : ControllerBase
     }
 
     [HttpDelete("my/remove/{productId}")]
+    [Authorize]
     public async Task<IActionResult> RemoveItem(int productId)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -73,6 +77,7 @@ public class CartController : ControllerBase
     }
 
     [HttpDelete("my/clear")]
+    [Authorize]
     public async Task<IActionResult> ClearCart()
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)

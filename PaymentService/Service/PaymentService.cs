@@ -27,8 +27,8 @@ public class PaymentService
         _logger = logger;
     }
 
-    public async Task<PaymentResponse> ProcessPaymentAsync(GatewayPaymentRequest request)
-    {
+    public async Task<PaymentResponse> ProcessPaymentAsync(GatewayPaymentRequest request, int userId)
+    {   
         // Check for existing payment with the same IdempotencyKey
         var existingPayment = await _db.Payments
             .FirstOrDefaultAsync(p => p.IdempotencyKey == request.IdempotencyKey);
@@ -71,6 +71,7 @@ public class PaymentService
         var payment = new Payment
         {
             OrderId = request.OrderId,
+            UserId = userId,
             Amount = request.Amount,
             Currency = request.Currency,
             Status = PaymentStatus.PENDING.ToString(),
@@ -161,4 +162,18 @@ public class PaymentService
         }));
     }
 
+    internal async Task<Payment> GetPaymentIntentAsync(int paymentId, int userId)
+    {
+        var payment = await _db.Payments.FirstOrDefaultAsync(p => p.PaymentId == paymentId && p.UserId == userId);
+        if (payment == null)
+        {
+            throw new Exception("Payment not found.");
+        }
+        if (payment.GatewayPaymentIntentId == null)
+        {
+            throw new Exception("Payment intent not created yet.");
+        }
+
+        return payment;
+    }
 }

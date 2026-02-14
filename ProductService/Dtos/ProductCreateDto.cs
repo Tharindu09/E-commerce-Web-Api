@@ -15,5 +15,7 @@ public class ProductCreateDto
     public string Category { get; set; } = default!;
     [Required]
     public int InitialStock { get; set; }
+    [Required]
+    public string ImageUrl { get; set; } = default!;
 }
 
