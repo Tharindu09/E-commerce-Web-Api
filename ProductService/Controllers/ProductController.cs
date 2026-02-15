@@ -17,35 +17,40 @@ public class ProductController : ControllerBase
 
     // CREATE PRODUCT
     [HttpPost]
-    public async Task<IActionResult> CreateProduct(ProductCreateDto dto)
+   // CREATE PRODUCT
+[HttpPost]
+public async Task<IActionResult> CreateProduct([FromBody] ProductCreateDto dto)
+{
+    if (dto == null)
+        return BadRequest("Request body is required.");
+
+    if (!ModelState.IsValid)
+        return ValidationProblem(ModelState);
+
+    if (dto.InitialStock < 0)
+        return BadRequest("Initial stock cannot be negative.");
+
+    try
     {
-        try
+        var product = await _productService.CreateProductAsync(dto);
+
+        var readDto = new ProductReadDto
         {
-            if (dto.InitialStock < 0)
-                return BadRequest("Initial stock cannot be negative");
-                
-            var product = await _productService.CreateProductAsync(dto);
+            Id = product.Id,
+            Name = product.Name,
+            Price = product.Price,
+            Category = product.Category,
+            Stock = product.Inventory?.TotalStock ?? 0,
+            ImageUrl = product.ImageUrl
+        };
 
-            var readDto = new ProductReadDto
-            {
-                Id = product.Id,
-                Name = product.Name,
-                Price = product.Price,
-                Category = product.Category,
-                Stock = product.Inventory.TotalStock,
-                ImageUrl = product.ImageUrl
-            };
-
-            return CreatedAtAction(nameof(GetProductById), new { id = readDto.Id }, readDto);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
-        }
-        
-
-        
+        return CreatedAtAction(nameof(GetProductById), new { id = readDto.Id }, readDto);
     }
+    catch (Exception ex)
+    {
+        return StatusCode(500, $"Internal server error: {ex.Message}");
+    }
+}
 
     // GET ALL PRODUCTS
     [HttpGet]
