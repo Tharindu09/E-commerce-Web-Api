@@ -24,7 +24,9 @@ public class StripePaymentGateway : IPaymentGateway
                 Confirm = true,
                 Metadata = new Dictionary<string, string>
                 {
-                    { "IdempotencyKey", request.IdempotencyKey }
+                    { "IdempotencyKey", request.IdempotencyKey },
+                    { "OrderId", request.OrderId.ToString() },
+                    { "Email", request.Email }
                 },
                 AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
                 {

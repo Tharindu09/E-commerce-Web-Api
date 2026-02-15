@@ -13,6 +13,8 @@ public class GatewayPaymentRequest
     public string IdempotencyKey { get; set; }
     [Required]
     public int OrderId { get; set; }
+    [Required]
+    public string Email { get; set; }
     
 }
 

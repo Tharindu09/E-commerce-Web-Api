@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -18,19 +19,23 @@ namespace PaymentService.Controller
 
         [HttpPost("process")]
         [Authorize]
-        public async Task<IActionResult> Post([FromBody] GatewayPaymentRequest request)
+        public async Task<IActionResult> Post([FromBody] PaymentRequest request)
         {
             try
             {
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
                          ?? User.FindFirstValue("sub");
-
-                if (string.IsNullOrWhiteSpace(userIdStr))
-                    return Unauthorized("Missing user id claim.");
+                 var email =User.FindFirstValue(ClaimTypes.Email) ??
+                                User.FindFirstValue("email") ??
+                                User.FindFirstValue("preferred_username") ??
+                                User.FindFirstValue("upn");
+                if (string.IsNullOrWhiteSpace(userIdStr) || string.IsNullOrWhiteSpace(email))
+                    return Unauthorized("Missing required claims.");
 
                 if (!int.TryParse(userIdStr, out var userId))
                     return Unauthorized("Invalid user id claim.");
-                var response = await _paymentService.ProcessPaymentAsync(request, userId);
+                Console.WriteLine("USer email:",email);
+                var response = await _paymentService.ProcessPaymentAsync(request, userId,email);
                 return Ok(response);
             }
             catch (Exception ex)

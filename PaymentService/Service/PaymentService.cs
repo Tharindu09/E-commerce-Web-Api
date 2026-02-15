@@ -27,7 +27,7 @@ public class PaymentService
         _logger = logger;
     }
 
-    public async Task<PaymentResponse> ProcessPaymentAsync(GatewayPaymentRequest request, int userId)
+    public async Task<PaymentResponse> ProcessPaymentAsync(PaymentRequest request, int userId,string email)
     {   
         // Check for existing payment with the same IdempotencyKey
         var existingPayment = await _db.Payments
@@ -72,6 +72,7 @@ public class PaymentService
         {
             OrderId = request.OrderId,
             UserId = userId,
+            UserEmail = email,
             Amount = request.Amount,
             Currency = request.Currency,
             Status = PaymentStatus.PENDING.ToString(),
@@ -87,7 +88,9 @@ public class PaymentService
             Amount = request.Amount,
             Currency = request.Currency,
             PaymentMethodId = request.PaymentMethodId,
-            IdempotencyKey = request.IdempotencyKey
+            IdempotencyKey = request.IdempotencyKey,
+            Email = email,
+            OrderId = request.OrderId
         });
         _logger.LogInformation("Payment intent created with status: {Status} for Payment ID: {PaymentId}", intent, payment.PaymentId);
         payment.Status = intent.Created ? PaymentStatus.PROCESSING.ToString() : PaymentStatus.FAILED.ToString();
@@ -133,7 +136,9 @@ public class PaymentService
             PaymentId = payment.PaymentId,
             OrderId = payment.OrderId,
             Amount = payment.Amount,
-            Status = payment.Status
+            Status = payment.Status,
+            Email = payment.UserEmail,
+            Currency = payment.Currency
         }));
         }
 
@@ -141,6 +146,7 @@ public class PaymentService
     {
         var intent = stripeEvent.Data.Object as PaymentIntent;
         var idempotencyKey = intent.Metadata["IdempotencyKey"]; 
+        var userEmail = intent.Metadata["Email"];
         var payment = await _db.Payments
             .FirstOrDefaultAsync(p => p.IdempotencyKey == idempotencyKey);
 
@@ -158,7 +164,9 @@ public class PaymentService
             PaymentId = payment.PaymentId,
             OrderId = payment.OrderId,
             Amount = payment.Amount,
-            Status = payment.Status
+            Status = payment.Status,
+            Email = payment.UserEmail,
+            Currency = payment.Currency
         }));
     }
 
