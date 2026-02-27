@@ -3,13 +3,11 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
+AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddHttpClient<ICartService, CCartService>(client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["ProductService:BaseUrl"]);
-});
 
 //grpc 
 builder.Services.AddGrpc();

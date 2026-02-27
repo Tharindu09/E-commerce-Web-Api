@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-urls
+  namespace: ecom
+data:
+  ReverseProxy__Clusters__product-cluster__Destinations__d1__Address: "http://product-service"
+  ReverseProxy__Clusters__cart-cluster__Destinations__d1__Address: "http://cart-service"
+  ReverseProxy__Clusters__user-cluster__Destinations__d1__Address: "http://user-service"
+  ReverseProxy__Clusters__order-cluster__Destinations__d1__Address: "http://order-service"
+  ReverseProxy__Clusters__payment-cluster__Destinations__d1__Address: "http://payment-service"

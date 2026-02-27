@@ -15,6 +15,13 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+// Apply migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
 // Middleware
 if (app.Environment.IsDevelopment())
 {

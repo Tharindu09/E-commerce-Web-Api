@@ -1,9 +1,19 @@
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using UserService.Data;
 using UserService.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(8080, listenOptions =>
+    {
+        listenOptions.Protocols =
+            HttpProtocols.Http1AndHttp2;
+    });
+});
 
 //Grpc server
 builder.Services.AddGrpc();
@@ -43,6 +53,13 @@ builder.Services.AddAuthentication().AddJwtBearer(Option =>
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+// Apply migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
 
 // Middleware
 if (app.Environment.IsDevelopment())

@@ -1,8 +1,20 @@
+using Confluent.Kafka;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
 using OrderService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(8080, listenOptions =>
+    {
+        listenOptions.Protocols =
+            HttpProtocols.Http1AndHttp2;
+    });
+});
 
 // -------------------- CORE ASP.NET --------------------
 builder.Services.AddControllers();
@@ -14,17 +26,17 @@ builder.Services.AddGrpc();
 // -------------------- gRPC CLIENTS --------------------
 builder.Services.AddGrpcClient<CartService.Grpc.CartService.CartServiceClient>(o =>
 {
-    o.Address = new Uri("https://localhost:7235");
+    o.Address = new Uri(builder.Configuration["GrpcServices:CartService"]);
 });
 
 builder.Services.AddGrpcClient<UserService.Grpc.UserProfileService.UserProfileServiceClient>(o =>
 {
-    o.Address = new Uri("https://localhost:7253");
+    o.Address = new Uri(builder.Configuration["GrpcServices:UserService"]);
 });
 
 builder.Services.AddGrpcClient<ProductService.Grpc.ProductService.ProductServiceClient>(o =>
 {
-    o.Address = new Uri("https://localhost:7133");
+    o.Address = new Uri(builder.Configuration["GrpcServices:ProductService"]);
 });
 
 // -------------------- Kafka --------------------
