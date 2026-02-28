@@ -15,8 +15,7 @@ public class ProductController : ControllerBase
         _productService = productService;
     }
 
-    // CREATE PRODUCT
-    [HttpPost]
+
    // CREATE PRODUCT
 [HttpPost]
 public async Task<IActionResult> CreateProduct([FromBody] ProductCreateDto dto)

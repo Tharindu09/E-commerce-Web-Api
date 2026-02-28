@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ProductService.Data;
+using ProductService.Model;
 using ProductService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,12 +16,16 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Apply migrations on startup
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    context.Database.Migrate(); // ensure DB is created
+
+    // DataSeeder.Seed(context); // seed initial data
+
 }
+
 
 // Middleware
 if (app.Environment.IsDevelopment())
